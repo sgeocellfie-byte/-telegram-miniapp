@@ -1,331 +1,164 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Тест: Реальный vs Поддельный Telegram WebApp</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini App - Заявка на ремонт</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; padding:20px; margin:0; }
-    .container { background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-bottom:20px; }
-    h2 { text-align:center; margin-bottom:18px; color:#333; }
-    h3 { margin:20px 0 10px 0; font-size:16px; border-bottom:1px solid #eee; padding-bottom:5px; }
-    .test-result { padding:15px; margin:10px 0; border-radius:8px; border:2px solid; }
-    .success { background:#d4edda; color:#155724; border-color:#c3e6cb; }
-    .error { background:#f8d7da; color:#721c24; border-color:#f5c6cb; }
-    .warning { background:#fff3cd; color:#856404; border-color:#ffeeba; }
-    .info { background:#d1ecf1; color:#0c5460; border-color:#bee5eb; }
-    .test-name { font-weight:700; font-size:16px; margin-bottom:8px; }
-    .test-description { font-size:14px; margin-bottom:10px; }
-    pre { background:#f8f9fa; padding:10px; border-radius:4px; overflow-x:auto; font-size:12px; margin:5px 0; }
-    .verdict { font-size:20px; font-weight:bold; text-align:center; padding:20px; border-radius:10px; margin:20px 0; }
-    .fake { background:#ffebee; color:#c62828; }
-    .real { background:#e8f5e8; color:#2e7d32; }
-    button { padding:10px 20px; margin:10px 5px; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
-    .btn-primary { background:#007bff; color:white; }
-    .btn-warning { background:#ff6b35; color:white; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+    textarea {
+      resize: vertical;
+    }
+    input.error, textarea.error {
+      border-color: red;
+    }
+    .error-message {
+      color: red;
+      font-size: 12px;
+      display: none;
+      margin-top: 3px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #4CAF50;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .success-message {
+      display: none;
+      margin-top: 15px;
+      color: green;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>🔍 Тест: Реальный vs Поддельный Telegram WebApp</h2>
+  <h2>Заявка на ремонт</h2>
   
-  <div class="test-result info">
-    <div class="test-name">Инструкция:</div>
-    <div class="test-description">
-      Запустите этот тест в ДВУХ режимах:<br>
-      1. <strong>Через кнопку бота в Telegram</strong> - должен показать "РЕАЛЬНЫЙ WebApp"<br>
-      2. <strong>Прямо в браузере</strong> - должен показать "ПОДДЕЛЬНЫЙ/НЕДОСТУПНЫЙ WebApp"
-    </div>
-  </div>
+  <label for="description">Описание ремонта</label>
+  <textarea id="description" rows="10" placeholder="Напишите описание проблемы"></textarea>
+  <div class="error-message" id="descError">Пожалуйста, заполните описание ремонта.</div>
+  
+  <label for="trip-cost">Стоимость выезда</label>
+  <input type="text" id="trip-cost" placeholder="Введите сумму в рублях">
+  <div class="error-message" id="tripError">Введите корректное число или оставьте пустым.</div>
 
-  <div style="text-align:center; margin:20px 0;">
-    <button class="btn-primary" onclick="runAllTests()">🚀 Запустить все тесты</button>
-    <button class="btn-warning" onclick="clearResults()">🗑️ Очистить результаты</button>
-  </div>
+  <label for="parts-cost">Стоимость запчастей</label>
+  <input type="text" id="parts-cost" placeholder="Введите сумму в рублях">
+  <div class="error-message" id="partsError">Введите корректное число или оставьте пустым.</div>
 
-  <div id="results"></div>
+  <button id="submitBtn">Отправить</button>
+  
+  <div class="success-message" id="successMessage">Заявка отправлена!</div>
 </div>
 
 <script>
-// Функция для отображения результатов
-function addTestResult(title, description, result, type) {
-  const resultsDiv = document.getElementById('results');
-  const testDiv = document.createElement('div');
-  testDiv.className = `test-result ${type}`;
-  
-  testDiv.innerHTML = `
-    <div class="test-name">${title}</div>
-    <div class="test-description">${description}</div>
-    <pre>${result}</pre>
-  `;
-  
-  resultsDiv.appendChild(testDiv);
-}
+  const submitBtn = document.getElementById('submitBtn');
+  const successMessage = document.getElementById('successMessage');
 
-// Очистка результатов
-function clearResults() {
-  document.getElementById('results').innerHTML = '';
-}
+  submitBtn.addEventListener('click', () => {
+    const description = document.getElementById('description');
+    const tripCost = document.getElementById('trip-cost');
+    const partsCost = document.getElementById('parts-cost');
 
-// Основная функция тестирования
-function runAllTests() {
-  clearResults();
-  
-  let realScore = 0;
-  let fakeScore = 0;
-  const tests = [];
-  
-  // Тест 1: Проверка доступности базового API
-  addTestResult('1️⃣ Базовый API', 'Проверка наличия Telegram.WebApp объекта', '', 'info');
-  
-  if (window.Telegram && Telegram.WebApp) {
-    const apiResult = `✅ Telegram.WebApp доступен
-Версия: ${Telegram.WebApp.version}
-Платформа: ${Telegram.WebApp.platform}
-Цветовая схема: ${Telegram.WebApp.colorScheme}`;
-    addTestResult('1️⃣ Базовый API', 'Telegram.WebApp объект найден', apiResult, 'success');
-    realScore += 1;
-    tests.push('basic_api_real');
-  } else {
-    const apiResult = `❌ Telegram.WebApp НЕ доступен
-Это нормально для прямого открытия в браузере`;
-    addTestResult('1️⃣ Базовый API', 'Telegram.WebApp объект отсутствует', apiResult, 'error');
-    fakeScore += 1;
-    tests.push('basic_api_fake');
-  }
-  
-  // Тест 2: Проверка initData (только если API доступен)
-  if (window.Telegram && Telegram.WebApp) {
-    addTestResult('2️⃣ initData', 'Проверка initData и её содержимого', '', 'info');
-    
-    if (Telegram.WebApp.initData) {
-      const initData = Telegram.WebApp.initData;
-      const params = {};
-      initData.split('&').forEach(param => {
-        const [key, value] = param.split('=');
-        if (key && value) {
-          params[decodeURIComponent(key)] = decodeURIComponent(value);
-        }
-      });
-      
-      const hasRequiredParams = params.auth_date && params.user && params.hash;
-      const paramCount = Object.keys(params).length;
-      
-      const initDataResult = `✅ initData найдена (${initData.length} символов)
-Параметров: ${paramCount}
-Обязательные параметры: ${hasRequiredParams ? '✅' : '❌'}
-auth_date: ${params.auth_date ? '✅' : '❌'}
-user: ${params.user ? '✅' : '❌'} 
-hash: ${params.hash ? '✅' : '❌'}
-user_data: ${params.user ? JSON.stringify(JSON.parse(decodeURIComponent(params.user)), null, 2).substring(0, 200) + '...' : 'отсутствует'}`;
-      
-      addTestResult('2️⃣ initData', 'initData проанализирована', initDataResult, hasRequiredParams ? 'success' : 'warning');
-      
-      if (hasRequiredParams) {
-        realScore += 2;
-        tests.push('initdata_real');
-      } else {
-        fakeScore += 1;
-        tests.push('initdata_incomplete');
-      }
+    const descError = document.getElementById('descError');
+    const tripError = document.getElementById('tripError');
+    const partsError = document.getElementById('partsError');
+
+    let hasError = false;
+
+    // Проверка описания ремонта (обязательно)
+    if (!description.value.trim()) {
+      description.classList.add('error');
+      descError.style.display = 'block';
+      hasError = true;
     } else {
-      const initDataResult = `❌ initData отсутствует
-Это указывает на неправильную инициализацию`;
-      addTestResult('2️⃣ initData', 'initData не найдена', initDataResult, 'error');
-      fakeScore += 2;
-      tests.push('initdata_missing');
+      description.classList.remove('error');
+      descError.style.display = 'none';
     }
-  }
-  
-  // Тест 3: Проверка методов WebApp
-  if (window.Telegram && Telegram.WebApp) {
-    addTestResult('3️⃣ Методы WebApp', 'Проверка доступности ключевых методов', '', 'info');
-    
-    const methods = {
-      'sendData': typeof Telegram.WebApp.sendData === 'function',
-      'CloudStorage': typeof Telegram.WebApp.CloudStorage !== 'undefined',
-      'ready': typeof Telegram.WebApp.ready === 'function',
-      'expand': typeof Telegram.WebApp.expand === 'function',
-      'close': typeof Telegram.WebApp.close === 'function',
-      'HapticFeedback': typeof Telegram.WebApp.HapticFeedback !== 'undefined'
-    };
-    
-    const methodsResult = Object.entries(methods).map(([method, available]) => 
-      `${method}: ${available ? '✅' : '❌'}`
-    ).join('\n');
-    
-    const realMethodsCount = Object.values(methods).filter(v => v).length;
-    const expectedRealMethods = 5; // sendData, ready, expand, close + хотя бы один из CloudStorage/HapticFeedback
-    
-    addTestResult('3️⃣ Методы WebApp', 'Доступность методов проверена', methodsResult, 
-      realMethodsCount >= 3 ? 'success' : 'warning');
-    
-    if (realMethodsCount >= 3) {
-      realScore += 2;
-      tests.push('methods_real');
+
+    // Проверка стоимости выезда (только цифры или пусто)
+    if (tripCost.value.trim() && isNaN(tripCost.value.trim())) {
+      tripCost.classList.add('error');
+      tripError.style.display = 'block';
+      hasError = true;
     } else {
-      fakeScore += 1;
-      tests.push('methods_limited');
+      tripCost.classList.remove('error');
+      tripError.style.display = 'none';
     }
-  }
-  
-  // Тест 4: Проверка специфичных для Telegram свойств
-  if (window.Telegram && Telegram.WebApp) {
-    addTestResult('4️⃣ Специфичные свойства', 'Проверка Telegram-специфичных данных', '', 'info');
-    
-    const specificProps = {
-      'initDataUnsafe': Telegram.WebApp.initDataUnsafe,
-      'themeParams': Telegram.WebApp.themeParams,
-      'colorScheme': Telegram.WebApp.colorScheme,
-      'isExpanded': Telegram.WebApp.isExpanded,
-      'viewportHeight': Telegram.WebApp.viewportHeight
-    };
-    
-    const specificResult = Object.entries(specificProps).map(([prop, value]) => 
-      `${prop}: ${value !== undefined && value !== null ? JSON.stringify(value) : 'отсутствует'}`
-    ).join('\n');
-    
-    const validPropsCount = Object.values(specificProps).filter(v => v !== undefined && v !== null).length;
-    
-    addTestResult('4️⃣ Специфичные свойства', 'Telegram-специфичные свойства проверены', specificResult,
-      validPropsCount >= 3 ? 'success' : 'warning');
-    
-    if (validPropsCount >= 3) {
-      realScore += 2;
-      tests.push('props_real');
+
+    // Проверка стоимости запчастей (только цифры или пусто)
+    if (partsCost.value.trim() && isNaN(partsCost.value.trim())) {
+      partsCost.classList.add('error');
+      partsError.style.display = 'block';
+      hasError = true;
     } else {
-      fakeScore += 1;
-      tests.push('props_limited');
+      partsCost.classList.remove('error');
+      partsError.style.display = 'none';
     }
-  }
-  
-  // Тест 5: Проверка на Mock/Poлифил
-  if (window.Telegram && Telegram.WebApp) {
-    addTestResult('5️⃣ Проверка на Mock', 'Поиск признаков поддельного WebApp', '', 'info');
-    
-    const mockIndicators = [];
-    const realIndicators = [];
-    
-    // Проверяем версию
-    if (Telegram.WebApp.version) {
-      if (Telegram.WebApp.version === '6.0' || Telegram.WebApp.version === '1.0') {
-        mockIndicators.push('Подозрительная версия: ' + Telegram.WebApp.version);
-      } else {
-        realIndicators.push('Версия выглядит реальной: ' + Telegram.WebApp.version);
-      }
+
+    if (hasError) return;
+
+    // Отправка данных в Telegram WebApp
+    if (window.Telegram.WebApp) {
+      Telegram.WebApp.sendData(JSON.stringify({
+        description: description.value.trim(),
+        tripCost: tripCost.value.trim() || null,
+        partsCost: partsCost.value.trim() || null
+      }));
     }
-    
-    // Проверяем платформу
-    if (Telegram.WebApp.platform) {
-      if (Telegram.WebApp.platform === 'unknown' || Telegram.WebApp.platform === 'web') {
-        mockIndicators.push('Подозрительная платформа: ' + Telegram.WebApp.platform);
-      } else {
-        realIndicators.push('Платформа выглядит реальной: ' + Telegram.WebApp.platform);
-      }
-    }
-    
-    // Проверяем initData
-    if (Telegram.WebApp.initData) {
-      if (Telegram.WebApp.initData.includes('test_data') || Telegram.WebApp.initData.includes('mock')) {
-        mockIndicators.push('initData содержит mock данные');
-      } else {
-        realIndicators.push('initData выглядит реальной');
-      }
-    }
-    
-    const mockResult = `Подозрительные признаки:\n${mockIndicators.length > 0 ? mockIndicators.map(m => '❌ ' + m).join('\n') : '❌ нет'}\n\nРеальные признаки:\n${realIndicators.length > 0 ? realIndicators.map(r => '✅ ' + r).join('\n') : '✅ нет'}`;
-    
-    addTestResult('5️⃣ Проверка на Mock', 'Анализ на признаки подделки', mockResult, 
-      mockIndicators.length > realIndicators.length ? 'warning' : 'success');
-    
-    if (mockIndicators.length > realIndicators.length) {
-      fakeScore += 3;
-      tests.push('mock_detected');
-    } else {
-      realScore += 2;
-      tests.push('appears_real');
-    }
-  }
-  
-  // Итоговое заключение
-  setTimeout(() => {
-    addVerdict(realScore, fakeScore, tests);
-  }, 500);
-}
 
-// Итоговое заключение
-function addVerdict(realScore, fakeScore, tests) {
-  const verdictDiv = document.createElement('div');
-  const resultsDiv = document.getElementById('results');
-  
-  let verdict, verdictClass, explanation;
-  
-  if (realScore > fakeScore * 1.5) {
-    verdict = '🎯 РЕАЛЬНЫЙ Telegram WebApp';
-    verdictClass = 'real';
-    explanation = `Счет: Реальный ${realScore} vs Поддельный ${fakeScore}
+    successMessage.style.display = 'block';
 
-Это выглядит как настоящий Telegram WebApp. Все основные функции доступны и работают корректно.`;
-  } else if (fakeScore > realScore) {
-    verdict = '🚫 ПОДДЕЛЬНЫЙ/НЕДОСТУПНЫЙ WebApp';
-    verdictClass = 'fake';
-    explanation = `Счет: Реальный ${realScore} vs Поддельный ${fakeScore}
-
-Это НЕ настоящий Telegram WebApp. Возможно:
-• Страница открыта напрямую в браузере
-• Vercel предоставляет mock Telegram.WebApp
-• Другой polyfill или имитация`;
-  } else {
-    verdict = '🤔 НЕОПРЕДЕЛЕННОЕ состояние';
-    verdictClass = 'warning';
-    explanation = `Счет: Реальный ${realScore} vs Поддельный ${fakeScore}
-
-Результат неоднозначен. Возможно:
-• Частично работающий WebApp
-• Проблемы с инициализацией
-• Нужна дополнительная диагностика`;
-  }
-  
-  verdictDiv.className = `verdict ${verdictClass}`;
-  verdictDiv.innerHTML = `
-    <div>${verdict}</div>
-    <div style="font-size:14px; font-weight:normal; margin-top:10px; white-space:pre-line;">${explanation}</div>
-    <div style="font-size:12px; margin-top:15px; font-weight:normal;">
-      Тесты выполнены: ${tests.join(', ')}
-    </div>
-  `;
-  
-  resultsDiv.appendChild(verdictDiv);
-  
-  // Добавляем рекомендации
-  const recommendations = document.createElement('div');
-  recommendations.className = 'test-result info';
-  recommendations.innerHTML = `
-    <div class="test-name">📋 Рекомендации:</div>
-    <div class="test-description">
-      <strong>Если показывает "РЕАЛЬНЫЙ" в браузере:</strong><br>
-      • Vercel может автоматически внедрять mock Telegram.WebApp<br>
-      • Проверьте исходный код страницы на наличие Telegram.WebApp polyfill<br>
-      • Проверьте консоль на предупреждения<br><br>
-      
-      <strong>Если показывает "ПОДДЕЛЬНЫЙ" через бота:</strong><br>
-      • Проверьте настройки домена в BotFather<br>
-      • Убедитесь, что кнопка меню настроена правильно<br>
-      • Проверьте HTTPS настройки<br><br>
-      
-      <strong>Ключевое отличие:</strong><br>
-      Настоящий Telegram WebApp через бота должен иметь реальные данные пользователя в initDataUnsafe.user
-    </div>
-  `;
-  
-  resultsDiv.appendChild(recommendations);
-}
-
-// Запуск при загрузке страницы
-window.addEventListener('load', function() {
-  setTimeout(runAllTests, 500);
-});
+    // Очистка полей
+    description.value = '';
+    tripCost.value = '';
+    partsCost.value = '';
+  });
 </script>
 
 </body>
