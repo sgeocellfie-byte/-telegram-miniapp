@@ -1,138 +1,121 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Заявка в n8n</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini App - Заявка на ремонт</title>
   <style>
     body {
-      font-family: system-ui;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
     }
-    input, textarea {
+    .container {
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      font-size: 16px;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
     }
     button {
       width: 100%;
-      padding: 12px;
-      background: #0088cc;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #4CAF50;
       color: white;
+      font-size: 16px;
       border: none;
-      border-radius: 18px;
-      font-size: 36px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .success-message {
+      display: none;
+      margin-top: 15px;
+      color: green;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h2>Создать заявку</h2>
-  <label>Описание</label>
-  <textarea id="desc" placeholder="Например: ремонт принтера HP..."></textarea>
 
-  <label>Цена</label>
-  <input type="number" id="price" placeholder="Введите сумму">
+<div class="container">
+  <h2>Заявка на ремонт</h2>
+  
+  <label for="description">Описание ремонта</label>
+  <textarea id="description" rows="3" placeholder="Напишите описание проблемы"></textarea>
+  
+  <label for="trip-cost">Стоимость выезда</label>
+  <input type="number" id="trip-cost" placeholder="Введите сумму в рублях">
 
-  <button id="send">Отправить</button>
+  <label for="parts-cost">Стоимость запчастей</label>
+  <input type="number" id="parts-cost" placeholder="Введите сумму в рублях">
 
-  <script>
-    const tg = window.Telegram.WebApp;
+  <button id="submitBtn">Отправить</button>
+  
+  <div class="success-message" id="successMessage">Заявка отправлена!</div>
+</div>
 
-    document.getElementById("send").addEventListener("click", async () => {
-      const description = document.getElementById("desc").value.trim();
-      const price = document.getElementById("price").value.trim();
+<script>
+  const submitBtn = document.getElementById('submitBtn');
+  const successMessage = document.getElementById('successMessage');
 
-      if (!description || !price) {
-        alert("Пожалуйста, заполните все поля.");
-        return;
-      }
+  submitBtn.addEventListener('click', () => {
+    const description = document.getElementById('description').value.trim();
+    const tripCost = document.getElementById('trip-cost').value.trim();
+    const partsCost = document.getElementById('parts-cost').value.trim();
 
-      const data = {
-        user_id: tg.initDataUnsafe.user?.id,
-        username: tg.initDataUnsafe.user?.username,
+    if (!description || !tripCost || !partsCost) {
+      alert('Пожалуйста, заполните все поля.');
+      return;
+    }
+
+    // Здесь можно сделать отправку данных в Telegram через WebApp JS API
+    // Например:
+    if (window.Telegram.WebApp) {
+      Telegram.WebApp.sendData(JSON.stringify({
         description,
-        price,
-      };
+        tripCost,
+        partsCost
+      }));
+    }
 
-      await fetch("https://https://florencia-tachistoscopic-snidely.ngrok-free.dev//webhook/telegram-miniapp, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+    // Показать сообщение об успешной отправке
+    successMessage.style.display = 'block';
+    
+    // Очистить поля
+    document.getElementById('description').value = '';
+    document.getElementById('trip-cost').value = '';
+    document.getElementById('parts-cost').value = '';
+  });
+</script>
 
-      tg.close();
-    });
-  </script>
 </body>
-=======
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <title>Заявка в n8n</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      font-family: system-ui;
-      padding: 20px;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      font-size: 16px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      background: #0088cc;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-  </style>
-</head>
-<body>
-  <h2>Создать заffffявку</h2>
-  <label>Описание</label>
-  <textarea id="desc" placeholder="Например: ремонт принтера HP..."></textarea>
-
-  <label>Цена</label>
-  <input type="number" id="price" placeholder="Введите сумму">
-
-  <button id="send">Отправить</button>
-
-  <script>
-    const tg = window.Telegram.WebApp;
-
-    document.getElementById("send").addEventListener("click", async () => {
-      const description = document.getElementById("desc").value.trim();
-      const price = document.getElementById("price").value.trim();
-
-      if (!description || !price) {
-        alert("Пожалуйста, заполните все поля.");
-        return;
-      }
-
-      const data = {
-        user_id: tg.initDataUnsafe.user?.id,
-        username: tg.initDataUnsafe.user?.username,
-        description,
-        price,
-      };
-
-      await fetch("https://https://florencia-tachistoscopic-snidely.ngrok-free.dev//webhook/telegram-miniapp, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      tg.close();
-    });
-  </script>
-</body>
->>>>>>> 063c5d2557342334a7bafa5feaa79e3f5ea62d96
 </html>
