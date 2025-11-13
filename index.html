@@ -1,106 +1,54 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Mini App - Заявка на ремонт</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: #fff;
-      padding: 20px 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input[type="text"], input[type="number"], textarea {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      transition: border-color 0.2s;
-    }
-    textarea {
-      resize: vertical;
-    }
-    input.error, textarea.error {
-      border-color: red;
-    }
-    .error-message {
-      color: red;
-      font-size: 12px;
-      display: none;
-      margin-top: 3px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 20px;
-      background-color: #4CAF50;
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    .success-message {
-      display: none;
-      margin-top: 15px;
-      color: green;
-      text-align: center;
-    }
+    body { font-family: Arial, sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
+    .container { background:#fff; padding:20px 30px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:100%; max-width:420px; }
+    h2 { text-align:center; margin-bottom:18px; }
+    label { display:block; margin-top:10px; font-weight:600; }
+    input[type="text"], textarea { width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; transition:border-color .15s; }
+    textarea { resize:vertical; min-height:110px; }
+    .error-message { color:#c00; font-size:12px; display:none; margin-top:4px; }
+    input.error, textarea.error { border-color:#c00; }
+    button { width:100%; padding:10px; margin-top:18px; background:#2a9d8f; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:16px; }
+    button[disabled] { opacity:.6; cursor:not-allowed; }
+    .success-message { display:none; margin-top:12px; color:green; text-align:center; }
+    .info { font-size:12px; color:#666; margin-top:8px; text-align:center; }
   </style>
 </head>
 <body>
 
 <div class="container">
   <h2>Заявка на ремонт</h2>
-  
+
   <label for="description">Описание ремонта</label>
-  <textarea id="description" rows="10" placeholder="Напишите описание проблемы"></textarea>
+  <textarea id="description" rows="6" placeholder="Напишите описание проблемы"></textarea>
   <div class="error-message" id="descError">Пожалуйста, заполните описание ремонта.</div>
-  
-  <label for="trip-cost">Стоимость выезда</label>
-  <input type="text" id="trip-cost" placeholder="Введите сумму в рублях">
+
+  <label for="trip-cost">Стоимость выезда (₽)</label>
+  <input type="text" id="trip-cost" placeholder="Введите сумму в рублях или оставьте пустым">
   <div class="error-message" id="tripError">Введите корректное число или оставьте пустым.</div>
 
-  <label for="parts-cost">Стоимость запчастей</label>
-  <input type="text" id="parts-cost" placeholder="Введите сумму в рублях">
+  <label for="parts-cost">Стоимость запчастей (₽)</label>
+  <input type="text" id="parts-cost" placeholder="Введите сумму в рублях или оставьте пустым">
   <div class="error-message" id="partsError">Введите корректное число или оставьте пустым.</div>
 
   <button id="submitBtn">Отправить</button>
-  
-  <div class="success-message" id="successMessage">Заявка отправлена!</div>
+  <div class="success-message" id="successMessage">Заявка отправлена в бот ✅</div>
+  <div class="info" id="infoText">Данные отправляются через Telegram Bot в ваш webhook для обработки workflow.</div>
 </div>
 
 <script>
+  // --- Элементы ---
   const submitBtn = document.getElementById('submitBtn');
   const successMessage = document.getElementById('successMessage');
+  const infoText = document.getElementById('infoText');
 
-  submitBtn.addEventListener('click', () => {
+  // --- Валидация и отправка ---
+  submitBtn.addEventListener('click', async () => {
     const description = document.getElementById('description');
     const tripCost = document.getElementById('trip-cost');
     const partsCost = document.getElementById('parts-cost');
@@ -111,7 +59,7 @@
 
     let hasError = false;
 
-    // Проверка описания ремонта (обязательно)
+    // Описание обязательно
     if (!description.value.trim()) {
       description.classList.add('error');
       descError.style.display = 'block';
@@ -121,7 +69,7 @@
       descError.style.display = 'none';
     }
 
-    // Проверка стоимости выезда (только цифры или пусто)
+    // Стоимости: либо пусто, либо валидное число
     if (tripCost.value.trim() && isNaN(tripCost.value.trim())) {
       tripCost.classList.add('error');
       tripError.style.display = 'block';
@@ -131,7 +79,6 @@
       tripError.style.display = 'none';
     }
 
-    // Проверка стоимости запчастей (только цифры или пусто)
     if (partsCost.value.trim() && isNaN(partsCost.value.trim())) {
       partsCost.classList.add('error');
       partsError.style.display = 'block';
@@ -143,23 +90,77 @@
 
     if (hasError) return;
 
-    // Отправка данных в Telegram WebApp
-    if (window.Telegram.WebApp) {
-      Telegram.WebApp.sendData(JSON.stringify({
-        description: description.value.trim(),
-        tripCost: tripCost.value.trim() || null,
-        partsCost: partsCost.value.trim() || null
-      }));
+    // --- Подготовка полезной нагрузки для sendData ---
+    // Вариант A: мы передаем данные клиентом в Telegram. Бот получит update с полем message.web_app_data.data
+    // Рекомендуется на сервере (в n8n) парсить JSON из message.web_app_data.data и использовать message.chat.id / message.from и т.д.
+    const now = new Date().toISOString();
+
+    // Если доступно, берём информацию из Telegram.WebApp.initDataUnsafe (не доверяйте на стороне сервера, используйте только как "подсказку")
+    let tgUser = null;
+    try {
+      if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+        tgUser = Telegram.WebApp.initDataUnsafe.user;
+      }
+    } catch (e) {
+      tgUser = null;
     }
 
-    successMessage.style.display = 'block';
+    const payload = {
+      meta: {
+        sentAt: now,
+        webAppVersion: (window.Telegram && Telegram.WebApp && Telegram.WebApp.version) ? Telegram.WebApp.version : null,
+        locale: (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.locale) || null,
+        userHint: tgUser // необязательное, для удобства — полноценную верификацию делайте на сервере
+      },
+      form: {
+        description: description.value.trim(),
+        tripCost: tripCost.value.trim() ? Number(tripCost.value.trim()) : null,
+        partsCost: partsCost.value.trim() ? Number(partsCost.value.trim()) : null
+      }
+    };
 
-    // Очистка полей
+    // --- UX: блокируем кнопку, показываем статус ---
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Отправка...';
+    infoText.textContent = 'Отправляем данные в бот...';
+
+    try {
+      if (window.Telegram && Telegram.WebApp && typeof Telegram.WebApp.sendData === 'function') {
+        // Отправляем строку (Telegram поместит её в message.web_app_data.data)
+        Telegram.WebApp.sendData(JSON.stringify(payload));
+
+        // По UX закроем WebApp (не обязательно — но обычно ожидаемо)
+        try { Telegram.WebApp.close(); } catch(e) { /* ignore */ }
+
+        // Показать локальный успех — фактическая доставка проверяется в боте/n8n
+        successMessage.style.display = 'block';
+        infoText.textContent = 'Данные отправлены. Они будут обработаны в workflow.';
+      } else {
+        // Если Telegram.WebApp отсутствует (страница открыта не из WebApp) — сообщаем пользователю
+        infoText.textContent = 'Ошибка: Telegram.WebApp недоступен. Откройте мини-приложение через Telegram.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Отправить';
+        return;
+      }
+    } catch (err) {
+      console.error('sendData error', err);
+      infoText.textContent = 'Ошибка при отправке данных — попробуйте снова.';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Отправить';
+      return;
+    }
+
+    // Очистка полей (локально)
     description.value = '';
     tripCost.value = '';
     partsCost.value = '';
+    submitBtn.textContent = 'Отправлено';
+    setTimeout(() => {
+      // Сброс кнопки через пару секунд, если окно не закрылось
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Отправить';
+    }, 2000);
   });
 </script>
-
 </body>
 </html>
