@@ -3,297 +3,328 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Диагностика Telegram Mini App</title>
+  <title>Тест: Реальный vs Поддельный Telegram WebApp</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
-    .container { background:#fff; padding:20px 30px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:100%; max-width:600px; }
+    body { font-family: Arial, sans-serif; background:#f5f5f5; padding:20px; margin:0; }
+    .container { background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); margin-bottom:20px; }
     h2 { text-align:center; margin-bottom:18px; color:#333; }
-    .test-section { margin-bottom:20px; padding:15px; border:1px solid #ddd; border-radius:8px; }
-    .test-section h3 { margin:0 0 10px 0; font-size:16px; }
-    .result { padding:8px; margin:8px 0; border-radius:4px; }
-    .success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
-    .error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
-    .warning { background:#fff3cd; color:#856404; border:1px solid #ffeeba; }
-    .info { background:#d1ecf1; color:#0c5460; border:1px solid #bee5eb; }
-    pre { background:#f8f9fa; padding:10px; border-radius:4px; overflow-x:auto; font-size:12px; }
-    button { padding:8px 15px; margin:5px 0; border:none; border-radius:4px; cursor:pointer; }
-    .btn-test { background:#007bff; color:white; }
-    .btn-clear { background:#6c757d; color:white; }
-    .clear-btn { background:#dc3545; color:white; }
+    h3 { margin:20px 0 10px 0; font-size:16px; border-bottom:1px solid #eee; padding-bottom:5px; }
+    .test-result { padding:15px; margin:10px 0; border-radius:8px; border:2px solid; }
+    .success { background:#d4edda; color:#155724; border-color:#c3e6cb; }
+    .error { background:#f8d7da; color:#721c24; border-color:#f5c6cb; }
+    .warning { background:#fff3cd; color:#856404; border-color:#ffeeba; }
+    .info { background:#d1ecf1; color:#0c5460; border-color:#bee5eb; }
+    .test-name { font-weight:700; font-size:16px; margin-bottom:8px; }
+    .test-description { font-size:14px; margin-bottom:10px; }
+    pre { background:#f8f9fa; padding:10px; border-radius:4px; overflow-x:auto; font-size:12px; margin:5px 0; }
+    .verdict { font-size:20px; font-weight:bold; text-align:center; padding:20px; border-radius:10px; margin:20px 0; }
+    .fake { background:#ffebee; color:#c62828; }
+    .real { background:#e8f5e8; color:#2e7d32; }
+    button { padding:10px 20px; margin:10px 5px; border:none; border-radius:6px; cursor:pointer; font-size:14px; }
+    .btn-primary { background:#007bff; color:white; }
+    .btn-warning { background:#ff6b35; color:white; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>🔍 Диагностика Telegram Mini App</h2>
-
-  <!-- Проверка 1: Telegram WebApp API -->
-  <div class="test-section">
-    <h3>1️⃣ Проверка Telegram WebApp API</h3>
-    <div id="api-test"></div>
-    <button class="btn-test" onclick="checkTelegramAPI()">Проверить API</button>
-  </div>
-
-  <!-- Проверка 2: initData -->
-  <div class="test-section">
-    <h3>2️⃣ Проверка initData</h3>
-    <div id="initdata-test"></div>
-    <button class="btn-test" onclick="checkInitData()">Проверить initData</button>
-    <button class="btn-clear" onclick="clearInitData()">Очистить initData (симуляция прямого открытия)</button>
-  </div>
-
-  <!-- Проверка 3: User data -->
-  <div class="test-section">
-    <h3>3️⃣ Проверка данных пользователя</h3>
-    <div id="user-test"></div>
-    <button class="btn-test" onclick="checkUserData()">Проверить пользователя</button>
-  </div>
-
-  <!-- Проверка 4: Отправка данных -->
-  <div class="test-section">
-    <h3>4️⃣ Тест отправки данных</h3>
-    <div id="send-test"></div>
-    <button class="btn-test" onclick="testSendData()">Тест отправки через sendData</button>
-    <button class="btn-test" onclick="testSendToWebhook()">Тест отправки в webhook</button>
-  </div>
-
-  <!-- Инструкции -->
-  <div class="test-section">
-    <h3>📋 Инструкции по диагностике</h3>
-    <div class="info">
-      <strong>Для полной диагностики:</strong><br>
-      1. Откройте эту страницу через кнопку бота в Telegram<br>
-      2. Запустите все тесты по порядку<br>
-      3. Сделайте скриншот результатов<br>
-      4. Сравните с результатами при прямом открытии страницы
+  <h2>🔍 Тест: Реальный vs Поддельный Telegram WebApp</h2>
+  
+  <div class="test-result info">
+    <div class="test-name">Инструкция:</div>
+    <div class="test-description">
+      Запустите этот тест в ДВУХ режимах:<br>
+      1. <strong>Через кнопку бота в Telegram</strong> - должен показать "РЕАЛЬНЫЙ WebApp"<br>
+      2. <strong>Прямо в браузере</strong> - должен показать "ПОДДЕЛЬНЫЙ/НЕДОСТУПНЫЙ WebApp"
     </div>
   </div>
+
+  <div style="text-align:center; margin:20px 0;">
+    <button class="btn-primary" onclick="runAllTests()">🚀 Запустить все тесты</button>
+    <button class="btn-warning" onclick="clearResults()">🗑️ Очистить результаты</button>
+  </div>
+
+  <div id="results"></div>
 </div>
 
 <script>
 // Функция для отображения результатов
-function showResult(containerId, message, type = 'info') {
-  const container = document.getElementById(containerId);
-  const div = document.createElement('div');
-  div.className = `result ${type}`;
-  div.innerHTML = message;
-  container.appendChild(div);
-}
-
-// Очистка контейнера
-function clearContainer(containerId) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = '';
-}
-
-// 1. Проверка Telegram API
-function checkTelegramAPI() {
-  clearContainer('api-test');
+function addTestResult(title, description, result, type) {
+  const resultsDiv = document.getElementById('results');
+  const testDiv = document.createElement('div');
+  testDiv.className = `test-result ${type}`;
   
-  let result = '';
-  let type = 'error';
+  testDiv.innerHTML = `
+    <div class="test-name">${title}</div>
+    <div class="test-description">${description}</div>
+    <pre>${result}</pre>
+  `;
+  
+  resultsDiv.appendChild(testDiv);
+}
+
+// Очистка результатов
+function clearResults() {
+  document.getElementById('results').innerHTML = '';
+}
+
+// Основная функция тестирования
+function runAllTests() {
+  clearResults();
+  
+  let realScore = 0;
+  let fakeScore = 0;
+  const tests = [];
+  
+  // Тест 1: Проверка доступности базового API
+  addTestResult('1️⃣ Базовый API', 'Проверка наличия Telegram.WebApp объекта', '', 'info');
   
   if (window.Telegram && Telegram.WebApp) {
-    result += '<strong>✅ Telegram.WebApp доступен</strong><br>';
-    result += `Версия: ${Telegram.WebApp.version || 'неизвестно'}<br>`;
-    result += `Платформа: ${Telegram.WebApp.platform || 'неизвестно'}<br>`;
-    result += `Цветовая схема: ${Telegram.WebApp.colorScheme || 'неизвестно'}<br>`;
-    
-    // Проверяем основные методы
-    if (typeof Telegram.WebApp.sendData === 'function') {
-      result += '✅ Метод sendData доступен<br>';
-    } else {
-      result += '❌ Метод sendData НЕ доступен<br>';
-    }
-    
-    if (Telegram.WebApp.initDataUnsafe) {
-      result += '✅ initDataUnsafe доступен<br>';
-    } else {
-      result += '❌ initDataUnsafe НЕ доступен<br>';
-    }
-    
-    type = 'success';
+    const apiResult = `✅ Telegram.WebApp доступен
+Версия: ${Telegram.WebApp.version}
+Платформа: ${Telegram.WebApp.platform}
+Цветовая схема: ${Telegram.WebApp.colorScheme}`;
+    addTestResult('1️⃣ Базовый API', 'Telegram.WebApp объект найден', apiResult, 'success');
+    realScore += 1;
+    tests.push('basic_api_real');
   } else {
-    result = '<strong>❌ Telegram.WebApp НЕ доступен</strong><br>';
-    result += 'Это означает, что страница открыта НЕ через Telegram бота<br>';
-    result += 'Возможные причины:<br>';
-    result += '• Прямое открытие в браузере<br>';
-    result += '• Неправильный домен в BotFather<br>';
-    result += '• Проблемы с кнопкой меню';
-    type = 'error';
+    const apiResult = `❌ Telegram.WebApp НЕ доступен
+Это нормально для прямого открытия в браузере`;
+    addTestResult('1️⃣ Базовый API', 'Telegram.WebApp объект отсутствует', apiResult, 'error');
+    fakeScore += 1;
+    tests.push('basic_api_fake');
   }
   
-  showResult('api-test', result, type);
-}
-
-// 2. Проверка initData
-function checkInitData() {
-  clearContainer('initdata-test');
-  
-  let result = '';
-  let type = 'error';
-  
-  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) {
-    const initData = Telegram.WebApp.initData;
-    result += '<strong>✅ initData найден</strong><br>';
-    result += `Длина: ${initData.length} символов<br>`;
-    result += `Первые 100 символов: ${initData.substring(0, 100)}...<br>`;
+  // Тест 2: Проверка initData (только если API доступен)
+  if (window.Telegram && Telegram.WebApp) {
+    addTestResult('2️⃣ initData', 'Проверка initData и её содержимого', '', 'info');
     
-    // Парсим параметры
-    const params = {};
-    initData.split('&').forEach(param => {
-      const [key, value] = param.split('=');
-      if (key && value) {
-        params[decodeURIComponent(key)] = decodeURIComponent(value);
+    if (Telegram.WebApp.initData) {
+      const initData = Telegram.WebApp.initData;
+      const params = {};
+      initData.split('&').forEach(param => {
+        const [key, value] = param.split('=');
+        if (key && value) {
+          params[decodeURIComponent(key)] = decodeURIComponent(value);
+        }
+      });
+      
+      const hasRequiredParams = params.auth_date && params.user && params.hash;
+      const paramCount = Object.keys(params).length;
+      
+      const initDataResult = `✅ initData найдена (${initData.length} символов)
+Параметров: ${paramCount}
+Обязательные параметры: ${hasRequiredParams ? '✅' : '❌'}
+auth_date: ${params.auth_date ? '✅' : '❌'}
+user: ${params.user ? '✅' : '❌'} 
+hash: ${params.hash ? '✅' : '❌'}
+user_data: ${params.user ? JSON.stringify(JSON.parse(decodeURIComponent(params.user)), null, 2).substring(0, 200) + '...' : 'отсутствует'}`;
+      
+      addTestResult('2️⃣ initData', 'initData проанализирована', initDataResult, hasRequiredParams ? 'success' : 'warning');
+      
+      if (hasRequiredParams) {
+        realScore += 2;
+        tests.push('initdata_real');
+      } else {
+        fakeScore += 1;
+        tests.push('initdata_incomplete');
       }
-    });
-    
-    result += '<br><strong>Параметры:</strong><br>';
-    result += `<pre>${JSON.stringify(params, null, 2)}</pre>`;
-    
-    // Проверяем обязательные параметры
-    if (params.auth_date && params.user && params.hash) {
-      type = 'success';
-      result += '<br><strong>✅ Все обязательные параметры присутствуют</strong>';
     } else {
-      type = 'warning';
-      result += '<br><strong>⚠️ Отсутствуют обязательные параметры</strong>';
+      const initDataResult = `❌ initData отсутствует
+Это указывает на неправильную инициализацию`;
+      addTestResult('2️⃣ initData', 'initData не найдена', initDataResult, 'error');
+      fakeScore += 2;
+      tests.push('initdata_missing');
     }
-    
-  } else {
-    result = '<strong>❌ initData НЕ найден</strong><br>';
-    result += 'Страница открыта напрямую, не через Telegram бота';
-    type = 'error';
   }
   
-  showResult('initdata-test', result, type);
-}
-
-// Очистка initData для симуляции прямого открытия
-function clearInitData() {
+  // Тест 3: Проверка методов WebApp
   if (window.Telegram && Telegram.WebApp) {
-    // Сохраняем оригинал
-    if (!window.originalInitData) {
-      window.originalInitData = Telegram.WebApp.initData;
-    }
-    // "Очищаем"
-    Telegram.WebApp.initData = '';
-    showResult('initdata-test', 'initData очищен (симуляция прямого открытия). Нажмите "Проверить API" для обновления статуса.', 'warning');
-  }
-}
-
-// 3. Проверка данных пользователя
-function checkUserData() {
-  clearContainer('user-test');
-  
-  let result = '';
-  let type = 'error';
-  
-  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
-    const user = Telegram.WebApp.initDataUnsafe.user;
+    addTestResult('3️⃣ Методы WebApp', 'Проверка доступности ключевых методов', '', 'info');
     
-    if (user) {
-      result += '<strong>✅ Данные пользователя найдены</strong><br>';
-      result += `<pre>${JSON.stringify(user, null, 2)}</pre>`;
-      type = 'success';
+    const methods = {
+      'sendData': typeof Telegram.WebApp.sendData === 'function',
+      'CloudStorage': typeof Telegram.WebApp.CloudStorage !== 'undefined',
+      'ready': typeof Telegram.WebApp.ready === 'function',
+      'expand': typeof Telegram.WebApp.expand === 'function',
+      'close': typeof Telegram.WebApp.close === 'function',
+      'HapticFeedback': typeof Telegram.WebApp.HapticFeedback !== 'undefined'
+    };
+    
+    const methodsResult = Object.entries(methods).map(([method, available]) => 
+      `${method}: ${available ? '✅' : '❌'}`
+    ).join('\n');
+    
+    const realMethodsCount = Object.values(methods).filter(v => v).length;
+    const expectedRealMethods = 5; // sendData, ready, expand, close + хотя бы один из CloudStorage/HapticFeedback
+    
+    addTestResult('3️⃣ Методы WebApp', 'Доступность методов проверена', methodsResult, 
+      realMethodsCount >= 3 ? 'success' : 'warning');
+    
+    if (realMethodsCount >= 3) {
+      realScore += 2;
+      tests.push('methods_real');
     } else {
-      result = '<strong>❌ Данные пользователя НЕ найдены</strong><br>';
-      result += 'initDataUnsafe.user равен null или undefined';
-      type = 'error';
+      fakeScore += 1;
+      tests.push('methods_limited');
     }
-  } else {
-    result = '<strong>❌ Невозможно получить данные пользователя</strong><br>';
-    result += 'Telegram.WebApp.initDataUnsafe недоступен';
-    type = 'error';
   }
   
-  showResult('user-test', result, type);
-}
-
-// 4. Тест отправки данных
-function testSendData() {
-  clearContainer('send-test');
-  
-  let result = '';
-  let type = 'error';
-  
-  if (window.Telegram && Telegram.WebApp && typeof Telegram.WebApp.sendData === 'function') {
-    try {
-      const testData = {
-        type: 'test',
-        timestamp: new Date().toISOString(),
-        message: 'Тестовая отправка из диагностики'
-      };
-      
-      Telegram.WebApp.sendData(JSON.stringify(testData));
-      
-      result = '<strong>✅ sendData выполнен успешно</strong><br>';
-      result += 'Данные отправлены в Telegram. Проверьте бота для получения сообщения.<br>';
-      result += `Тестовые данные: <pre>${JSON.stringify(testData, null, 2)}</pre>`;
-      type = 'success';
-      
-    } catch (error) {
-      result = `<strong>❌ Ошибка при отправке: ${error.message}</strong>`;
-      type = 'error';
+  // Тест 4: Проверка специфичных для Telegram свойств
+  if (window.Telegram && Telegram.WebApp) {
+    addTestResult('4️⃣ Специфичные свойства', 'Проверка Telegram-специфичных данных', '', 'info');
+    
+    const specificProps = {
+      'initDataUnsafe': Telegram.WebApp.initDataUnsafe,
+      'themeParams': Telegram.WebApp.themeParams,
+      'colorScheme': Telegram.WebApp.colorScheme,
+      'isExpanded': Telegram.WebApp.isExpanded,
+      'viewportHeight': Telegram.WebApp.viewportHeight
+    };
+    
+    const specificResult = Object.entries(specificProps).map(([prop, value]) => 
+      `${prop}: ${value !== undefined && value !== null ? JSON.stringify(value) : 'отсутствует'}`
+    ).join('\n');
+    
+    const validPropsCount = Object.values(specificProps).filter(v => v !== undefined && v !== null).length;
+    
+    addTestResult('4️⃣ Специфичные свойства', 'Telegram-специфичные свойства проверены', specificResult,
+      validPropsCount >= 3 ? 'success' : 'warning');
+    
+    if (validPropsCount >= 3) {
+      realScore += 2;
+      tests.push('props_real');
+    } else {
+      fakeScore += 1;
+      tests.push('props_limited');
     }
+  }
+  
+  // Тест 5: Проверка на Mock/Poлифил
+  if (window.Telegram && Telegram.WebApp) {
+    addTestResult('5️⃣ Проверка на Mock', 'Поиск признаков поддельного WebApp', '', 'info');
+    
+    const mockIndicators = [];
+    const realIndicators = [];
+    
+    // Проверяем версию
+    if (Telegram.WebApp.version) {
+      if (Telegram.WebApp.version === '6.0' || Telegram.WebApp.version === '1.0') {
+        mockIndicators.push('Подозрительная версия: ' + Telegram.WebApp.version);
+      } else {
+        realIndicators.push('Версия выглядит реальной: ' + Telegram.WebApp.version);
+      }
+    }
+    
+    // Проверяем платформу
+    if (Telegram.WebApp.platform) {
+      if (Telegram.WebApp.platform === 'unknown' || Telegram.WebApp.platform === 'web') {
+        mockIndicators.push('Подозрительная платформа: ' + Telegram.WebApp.platform);
+      } else {
+        realIndicators.push('Платформа выглядит реальной: ' + Telegram.WebApp.platform);
+      }
+    }
+    
+    // Проверяем initData
+    if (Telegram.WebApp.initData) {
+      if (Telegram.WebApp.initData.includes('test_data') || Telegram.WebApp.initData.includes('mock')) {
+        mockIndicators.push('initData содержит mock данные');
+      } else {
+        realIndicators.push('initData выглядит реальной');
+      }
+    }
+    
+    const mockResult = `Подозрительные признаки:\n${mockIndicators.length > 0 ? mockIndicators.map(m => '❌ ' + m).join('\n') : '❌ нет'}\n\nРеальные признаки:\n${realIndicators.length > 0 ? realIndicators.map(r => '✅ ' + r).join('\n') : '✅ нет'}`;
+    
+    addTestResult('5️⃣ Проверка на Mock', 'Анализ на признаки подделки', mockResult, 
+      mockIndicators.length > realIndicators.length ? 'warning' : 'success');
+    
+    if (mockIndicators.length > realIndicators.length) {
+      fakeScore += 3;
+      tests.push('mock_detected');
+    } else {
+      realScore += 2;
+      tests.push('appears_real');
+    }
+  }
+  
+  // Итоговое заключение
+  setTimeout(() => {
+    addVerdict(realScore, fakeScore, tests);
+  }, 500);
+}
+
+// Итоговое заключение
+function addVerdict(realScore, fakeScore, tests) {
+  const verdictDiv = document.createElement('div');
+  const resultsDiv = document.getElementById('results');
+  
+  let verdict, verdictClass, explanation;
+  
+  if (realScore > fakeScore * 1.5) {
+    verdict = '🎯 РЕАЛЬНЫЙ Telegram WebApp';
+    verdictClass = 'real';
+    explanation = `Счет: Реальный ${realScore} vs Поддельный ${fakeScore}
+
+Это выглядит как настоящий Telegram WebApp. Все основные функции доступны и работают корректно.`;
+  } else if (fakeScore > realScore) {
+    verdict = '🚫 ПОДДЕЛЬНЫЙ/НЕДОСТУПНЫЙ WebApp';
+    verdictClass = 'fake';
+    explanation = `Счет: Реальный ${realScore} vs Поддельный ${fakeScore}
+
+Это НЕ настоящий Telegram WebApp. Возможно:
+• Страница открыта напрямую в браузере
+• Vercel предоставляет mock Telegram.WebApp
+• Другой polyfill или имитация`;
   } else {
-    result = '<strong>❌ Невозможно отправить данные</strong><br>';
-    result += 'Telegram.WebApp.sendData недоступен';
-    type = 'error';
+    verdict = '🤔 НЕОПРЕДЕЛЕННОЕ состояние';
+    verdictClass = 'warning';
+    explanation = `Счет: Реальный ${realScore} vs Поддельный ${fakeScore}
+
+Результат неоднозначен. Возможно:
+• Частично работающий WebApp
+• Проблемы с инициализацией
+• Нужна дополнительная диагностика`;
   }
   
-  showResult('send-test', result, type);
+  verdictDiv.className = `verdict ${verdictClass}`;
+  verdictDiv.innerHTML = `
+    <div>${verdict}</div>
+    <div style="font-size:14px; font-weight:normal; margin-top:10px; white-space:pre-line;">${explanation}</div>
+    <div style="font-size:12px; margin-top:15px; font-weight:normal;">
+      Тесты выполнены: ${tests.join(', ')}
+    </div>
+  `;
+  
+  resultsDiv.appendChild(verdictDiv);
+  
+  // Добавляем рекомендации
+  const recommendations = document.createElement('div');
+  recommendations.className = 'test-result info';
+  recommendations.innerHTML = `
+    <div class="test-name">📋 Рекомендации:</div>
+    <div class="test-description">
+      <strong>Если показывает "РЕАЛЬНЫЙ" в браузере:</strong><br>
+      • Vercel может автоматически внедрять mock Telegram.WebApp<br>
+      • Проверьте исходный код страницы на наличие Telegram.WebApp polyfill<br>
+      • Проверьте консоль на предупреждения<br><br>
+      
+      <strong>Если показывает "ПОДДЕЛЬНЫЙ" через бота:</strong><br>
+      • Проверьте настройки домена в BotFather<br>
+      • Убедитесь, что кнопка меню настроена правильно<br>
+      • Проверьте HTTPS настройки<br><br>
+      
+      <strong>Ключевое отличие:</strong><br>
+      Настоящий Telegram WebApp через бота должен иметь реальные данные пользователя в initDataUnsafe.user
+    </div>
+  `;
+  
+  resultsDiv.appendChild(recommendations);
 }
 
-// Тест отправки в внешний webhook
-function testSendToWebhook() {
-  clearContainer('send-test');
-  
-  let result = '';
-  let type = 'warning';
-  
-  // Здесь можно настроить URL вашего webhook для тестирования
-  const webhookUrl = prompt('Введите URL вашего webhook (например, URL n8n или обработчика):', '');
-  
-  if (!webhookUrl) {
-    showResult('send-test', 'URL webhook не указан', 'error');
-    return;
-  }
-  
-  const testData = {
-    type: 'webhook_test',
-    timestamp: new Date().toISOString(),
-    initData: Telegram.WebApp ? Telegram.WebApp.initData : null,
-    userData: Telegram.WebApp && Telegram.WebApp.initDataUnsafe ? Telegram.WebApp.initDataUnsafe : null,
-    message: 'Тестовая отправка в webhook'
-  };
-  
-  fetch(webhookUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(testData)
-  })
-  .then(response => response.json())
-  .then(data => {
-    result = '<strong>✅ Запрос в webhook выполнен</strong><br>';
-    result += `Статус ответа: ${response.status}<br>`;
-    result += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-    showResult('send-test', result, 'success');
-  })
-  .catch(error => {
-    result = `<strong>❌ Ошибка при отправке в webhook: ${error.message}</strong>`;
-    showResult('send-test', result, 'error');
-  });
-}
-
-// Автоматическая проверка при загрузке
+// Запуск при загрузке страницы
 window.addEventListener('load', function() {
-  // Небольшая задержка для инициализации Telegram WebApp
-  setTimeout(checkTelegramAPI, 100);
-  setTimeout(checkInitData, 200);
-  setTimeout(checkUserData, 300);
+  setTimeout(runAllTests, 500);
 });
 </script>
 
