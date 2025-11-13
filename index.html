@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Заявка в n8n</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      font-family: system-ui;
+      padding: 20px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0088cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Создать заявку</h2>
+  <label>Описание</label>
+  <textarea id="desc" placeholder="Например: ремонт принтера HP..."></textarea>
+
+  <label>Цена</label>
+  <input type="number" id="price" placeholder="Введите сумму">
+
+  <button id="send">Отправить</button>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+
+    document.getElementById("send").addEventListener("click", async () => {
+      const description = document.getElementById("desc").value.trim();
+      const price = document.getElementById("price").value.trim();
+
+      if (!description || !price) {
+        alert("Пожалуйста, заполните все поля.");
+        return;
+      }
+
+      const data = {
+        user_id: tg.initDataUnsafe.user?.id,
+        username: tg.initDataUnsafe.user?.username,
+        description,
+        price,
+      };
+
+      await fetch("https://https://florencia-tachistoscopic-snidely.ngrok-free.dev//webhook/telegram-miniapp, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+
+      tg.close();
+    });
+  </script>
+</body>
+</html>
