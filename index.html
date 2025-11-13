@@ -259,3 +259,30 @@
     }
   });
 </script>
+<script>
+  (function(){
+    const info = {
+      href: location.href,
+      referrer: document.referrer,
+      userAgent: navigator.userAgent,
+      hasTelegramObject: (typeof window.Telegram === 'object'),
+      hasWebApp: (typeof (window.Telegram && Telegram.WebApp) === 'object'),
+      initDataType: (typeof (Telegram?.WebApp?.initData))
+    };
+    // Покажем на странице
+    const debug = document.createElement('pre');
+    debug.style.position='fixed';
+    debug.style.left='12px';
+    debug.style.top='12px';
+    debug.style.zIndex=99999;
+    debug.style.background='rgba(0,0,0,0.8)';
+    debug.style.color='#fff';
+    debug.style.padding='10px';
+    debug.style.borderRadius='8px';
+    debug.style.maxWidth='40vw';
+    debug.textContent = 'DEBUG: ' + JSON.stringify(info, null, 2);
+    document.body.appendChild(debug);
+    // и в консоль
+    console.log('WEBAPP DEBUG:', info);
+  })();
+</script>
