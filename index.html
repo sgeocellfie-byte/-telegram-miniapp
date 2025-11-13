@@ -184,3 +184,77 @@
   <button id="tg-fallback" style="background:#6c757d;color:#fff;">Fallback → отправить прямо в n8n (для отладки)</button>
   <small id="tg-log">Логи: —</small>
 </div>
+<script>
+  const statusEl = document.getElementById('tg-status');
+  const initEl = document.getElementById('tg-init');
+  const logEl = document.getElementById('tg-log');
+  const sendBtn = document.getElementById('tg-send');
+  const fallbackBtn = document.getElementById('tg-fallback');
+
+  function log(msg){
+    console.log('[tg-debug]', msg);
+    logEl.textContent = 'Логи: ' + msg;
+  }
+
+  function updateStatus(){
+    const hasTg = (typeof window.Telegram === 'object' && typeof Telegram.WebApp === 'object');
+    if(hasTg){
+      statusEl.innerHTML = '<span class="ok">доступен</span>';
+      initEl.textContent = (typeof Telegram.WebApp.initData === 'string') ? 'string' : String(typeof Telegram.WebApp.initData);
+      log('Telegram.WebApp присутствует. initDataUnsafe: ' + JSON.stringify(Telegram.WebApp.initDataUnsafe || {}));
+    } else {
+      statusEl.innerHTML = '<span class="bad">отсутствует</span>';
+      initEl.textContent = 'n/a';
+      log('Telegram.WebApp не найден. Страница, вероятно, открыта не через Web App.');
+    }
+  }
+
+  updateStatus();
+
+  // пробуем обновлять раз в секунду первые 5 секунд (иногда объект инициализируется чуть позже)
+  let tries = 0;
+  const interval = setInterval(()=>{
+    tries++;
+    updateStatus();
+    if(tries>5) clearInterval(interval);
+  }, 1000);
+
+  sendBtn.addEventListener('click', async ()=>{
+    if(typeof window.Telegram === 'object' && typeof Telegram.WebApp === 'object'){
+      const payload = { debugPing: true, ts: new Date().toISOString() };
+      try{
+        Telegram.WebApp.sendData(JSON.stringify(payload));
+        log('Вызван Telegram.WebApp.sendData() с payload: ' + JSON.stringify(payload));
+        alert('Вызван sendData(). Проверьте, пришло ли update на ваш webhook в n8n (message.web_app_data.data).');
+      }catch(e){
+        log('Ошибка sendData: ' + e.message);
+        alert('Ошибка sendData: ' + e.message);
+      }
+    } else {
+      alert('Telegram.WebApp недоступен — откройте приложение через кнопку в боте (не по прямой ссылке).');
+    }
+  });
+
+  fallbackBtn.addEventListener('click', async ()=>{
+    // --- РАСКОММЕНТИРУЙТЕ / ЗАПОЛНИТЕ для отладки ---
+    const N8N_WEBHOOK = 'https://florencia-tachistoscopic-snidely.ngrok-free.dev/webhook-test/f43c5c03-ca03-4394-b3f4-6562f5d9d65a/webhook'; // <-- вставьте сюда ваш тестовый webhook n8n, например: https://your-n8n.example.com/webhook/test
+    if(!N8N_WEBHOOK){
+      alert('Fallback отключён: вставьте URL вашего n8n webhook в переменную N8N_WEBHOOK в коде.');
+      return;
+    }
+    const payload = { debugFallback: true, ts: new Date().toISOString(), userHint: Telegram?.WebApp?.initDataUnsafe || null };
+    try{
+      const res = await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug': 'true' },
+        body: JSON.stringify(payload)
+      });
+      const txt = await res.text();
+      log('Fallback отправлен, ответ n8n: ' + txt.slice(0,200));
+      alert('Fallback отправлен. Ответ: ' + txt.slice(0,200));
+    }catch(e){
+      log('Fallback failed: ' + e.message);
+      alert('Ошибка отправки в n8n: ' + e.message);
+    }
+  });
+</script>
