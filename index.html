@@ -4,18 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mini App - Заявка на ремонт</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      background: var(--tg-theme-bg-color, #f5f5f5);
+      color: var(--tg-theme-text-color, #000);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      padding: 10px;
     }
     .container {
-      background: #fff;
+      background: var(--tg-theme-secondary-bg-color, #fff);
       padding: 20px 30px;
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
@@ -25,6 +28,7 @@
     h2 {
       text-align: center;
       margin-bottom: 20px;
+      color: var(--tg-theme-text-color, #000);
     }
     label {
       display: block;
@@ -39,6 +43,8 @@
       border: 1px solid #ccc;
       box-sizing: border-box;
       transition: border-color 0.2s;
+      background: var(--tg-theme-bg-color, #fff);
+      color: var(--tg-theme-text-color, #000);
     }
     textarea {
       resize: vertical;
@@ -56,21 +62,30 @@
       width: 100%;
       padding: 10px;
       margin-top: 20px;
-      background-color: #4CAF50;
-      color: white;
+      background-color: var(--tg-theme-button-color, #4CAF50);
+      color: var(--tg-theme-button-text-color, white);
       font-size: 16px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
     button:hover {
-      background-color: #45a049;
+      opacity: 0.9;
     }
-    .success-message {
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .success-message, .error-submit {
       display: none;
       margin-top: 15px;
-      color: green;
       text-align: center;
+    }
+    .success-message {
+      color: green;
+    }
+    .error-submit {
+      color: red;
     }
   </style>
 </head>
@@ -94,13 +109,21 @@
   <button id="submitBtn">Отправить</button>
   
   <div class="success-message" id="successMessage">Заявка отправлена!</div>
+  <div class="error-submit" id="errorSubmit">Ошибка отправки. Попробуйте снова.</div>
 </div>
 
 <script>
+  // ЗАМЕНИТЕ НА ВАШ URL WEBHOOK ИЗ N8N
+  const N8N_WEBHOOK_URL = 'https://your-n8n-instance.com/webhook/telegram-repair';
+  
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+  
   const submitBtn = document.getElementById('submitBtn');
   const successMessage = document.getElementById('successMessage');
+  const errorSubmit = document.getElementById('errorSubmit');
 
-  submitBtn.addEventListener('click', () => {
+  submitBtn.addEventListener('click', async () => {
     const description = document.getElementById('description');
     const tripCost = document.getElementById('trip-cost');
     const partsCost = document.getElementById('parts-cost');
@@ -108,6 +131,10 @@
     const descError = document.getElementById('descError');
     const tripError = document.getElementById('tripError');
     const partsError = document.getElementById('partsError');
+
+    // Скрыть предыдущие сообщения
+    successMessage.style.display = 'none';
+    errorSubmit.style.display = 'none';
 
     let hasError = false;
 
@@ -143,21 +170,56 @@
 
     if (hasError) return;
 
-    // Отправка данных в Telegram WebApp
-    if (window.Telegram.WebApp) {
-      Telegram.WebApp.sendData(JSON.stringify({
-        description: description.value.trim(),
-        tripCost: tripCost.value.trim() || null,
-        partsCost: partsCost.value.trim() || null
-      }));
+    // Подготовка данных
+    const formData = {
+      description: description.value.trim(),
+      tripCost: tripCost.value.trim() || null,
+      partsCost: partsCost.value.trim() || null,
+      // Данные пользователя из Telegram
+      user_id: tg.initDataUnsafe?.user?.id || null,
+      username: tg.initDataUnsafe?.user?.username || null,
+      first_name: tg.initDataUnsafe?.user?.first_name || null,
+      last_name: tg.initDataUnsafe?.user?.last_name || null,
+      chat_id: tg.initDataUnsafe?.user?.id || null,
+      timestamp: new Date().toISOString()
+    };
+
+    // Отключаем кнопку во время отправки
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Отправка...';
+
+    try {
+      // Отправка данных в n8n
+      const response = await fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        successMessage.style.display = 'block';
+        
+        // Очистка полей
+        description.value = '';
+        tripCost.value = '';
+        partsCost.value = '';
+
+        // Закрыть Mini App через 2 секунды
+        setTimeout(() => {
+          tg.close();
+        }, 2000);
+      } else {
+        throw new Error('Ошибка сервера');
+      }
+    } catch (error) {
+      console.error('Ошибка отправки:', error);
+      errorSubmit.style.display = 'block';
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Отправить';
     }
-
-    successMessage.style.display = 'block';
-
-    // Очистка полей
-    description.value = '';
-    tripCost.value = '';
-    partsCost.value = '';
   });
 </script>
 
