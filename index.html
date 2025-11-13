@@ -1,166 +1,95 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Mini App - Заявка на ремонт</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
-    .container { background:#fff; padding:20px 30px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:100%; max-width:420px; }
-    h2 { text-align:center; margin-bottom:18px; }
-    label { display:block; margin-top:10px; font-weight:600; }
-    input[type="text"], textarea { width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; transition:border-color .15s; }
-    textarea { resize:vertical; min-height:110px; }
-    .error-message { color:#c00; font-size:12px; display:none; margin-top:4px; }
-    input.error, textarea.error { border-color:#c00; }
-    button { width:100%; padding:10px; margin-top:18px; background:#2a9d8f; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:16px; }
-    button[disabled] { opacity:.6; cursor:not-allowed; }
-    .success-message { display:none; margin-top:12px; color:green; text-align:center; }
-    .info { font-size:12px; color:#666; margin-top:8px; text-align:center; }
-  </style>
-</head>
-<body>
+<!-- --- DEBUG OVERLAY: вставьте в index.html --- -->
+<style>
+  #tg-debug {
+    position: fixed; right: 12px; bottom: 12px; z-index: 9999;
+    background: rgba(0,0,0,0.85); color: #fff; padding: 10px 12px; border-radius: 8px;
+    font-family: Arial, sans-serif; font-size:13px; width:320px; box-shadow:0 6px 20px rgba(0,0,0,0.3);
+  }
+  #tg-debug button{ margin-top:8px; width:100%; padding:8px; border-radius:6px; border:none; cursor:pointer; }
+  #tg-debug .ok{ color:#8be78b; font-weight:700; }
+  #tg-debug .bad{ color:#ff8b8b; font-weight:700; }
+  #tg-debug small{ color:#ddd; display:block; margin-top:6px; font-size:11px; }
+</style>
 
-<div class="container">
-  <h2>Заявка на ремонт</h2>
-
-  <label for="description">Описание ремонта</label>
-  <textarea id="description" rows="6" placeholder="Напишите описание проблемы"></textarea>
-  <div class="error-message" id="descError">Пожалуйста, заполните описание ремонта.</div>
-
-  <label for="trip-cost">Стоимость выезда (₽)</label>
-  <input type="text" id="trip-cost" placeholder="Введите сумму в рублях или оставьте пустым">
-  <div class="error-message" id="tripError">Введите корректное число или оставьте пустым.</div>
-
-  <label for="parts-cost">Стоимость запчастей (₽)</label>
-  <input type="text" id="parts-cost" placeholder="Введите сумму в рублях или оставьте пустым">
-  <div class="error-message" id="partsError">Введите корректное число или оставьте пустым.</div>
-
-  <button id="submitBtn">Отправить</button>
-  <div class="success-message" id="successMessage">Заявка отправлена в бот ✅</div>
-  <div class="info" id="infoText">Данные отправляются через Telegram Bot в ваш webhook для обработки workflow.</div>
+<div id="tg-debug" role="region" aria-label="Telegram WebApp debug">
+  <div>Telegram.WebApp: <span id="tg-status">проверка...</span></div>
+  <div style="margin-top:6px;">initData type: <span id="tg-init">—</span></div>
+  <button id="tg-send" style="background:#2a9d8f;color:#fff;">Отправить тест через Telegram.WebApp.sendData()</button>
+  <button id="tg-fallback" style="background:#6c757d;color:#fff;">Fallback → отправить прямо в n8n (для отладки)</button>
+  <small id="tg-log">Логи: —</small>
 </div>
 
 <script>
-  // --- Элементы ---
-  const submitBtn = document.getElementById('submitBtn');
-  const successMessage = document.getElementById('successMessage');
-  const infoText = document.getElementById('infoText');
+  const statusEl = document.getElementById('tg-status');
+  const initEl = document.getElementById('tg-init');
+  const logEl = document.getElementById('tg-log');
+  const sendBtn = document.getElementById('tg-send');
+  const fallbackBtn = document.getElementById('tg-fallback');
 
-  // --- Валидация и отправка ---
-  submitBtn.addEventListener('click', async () => {
-    const description = document.getElementById('description');
-    const tripCost = document.getElementById('trip-cost');
-    const partsCost = document.getElementById('parts-cost');
+  function log(msg){
+    console.log('[tg-debug]', msg);
+    logEl.textContent = 'Логи: ' + msg;
+  }
 
-    const descError = document.getElementById('descError');
-    const tripError = document.getElementById('tripError');
-    const partsError = document.getElementById('partsError');
-
-    let hasError = false;
-
-    // Описание обязательно
-    if (!description.value.trim()) {
-      description.classList.add('error');
-      descError.style.display = 'block';
-      hasError = true;
+  function updateStatus(){
+    const hasTg = (typeof window.Telegram === 'object' && typeof Telegram.WebApp === 'object');
+    if(hasTg){
+      statusEl.innerHTML = '<span class="ok">доступен</span>';
+      initEl.textContent = (typeof Telegram.WebApp.initData === 'string') ? 'string' : String(typeof Telegram.WebApp.initData);
+      log('Telegram.WebApp присутствует. initDataUnsafe: ' + JSON.stringify(Telegram.WebApp.initDataUnsafe || {}));
     } else {
-      description.classList.remove('error');
-      descError.style.display = 'none';
+      statusEl.innerHTML = '<span class="bad">отсутствует</span>';
+      initEl.textContent = 'n/a';
+      log('Telegram.WebApp не найден. Страница, вероятно, открыта не через Web App.');
     }
+  }
 
-    // Стоимости: либо пусто, либо валидное число
-    if (tripCost.value.trim() && isNaN(tripCost.value.trim())) {
-      tripCost.classList.add('error');
-      tripError.style.display = 'block';
-      hasError = true;
-    } else {
-      tripCost.classList.remove('error');
-      tripError.style.display = 'none';
-    }
+  updateStatus();
 
-    if (partsCost.value.trim() && isNaN(partsCost.value.trim())) {
-      partsCost.classList.add('error');
-      partsError.style.display = 'block';
-      hasError = true;
-    } else {
-      partsCost.classList.remove('error');
-      partsError.style.display = 'none';
-    }
+  // пробуем обновлять раз в секунду первые 5 секунд (иногда объект инициализируется чуть позже)
+  let tries = 0;
+  const interval = setInterval(()=>{
+    tries++;
+    updateStatus();
+    if(tries>5) clearInterval(interval);
+  }, 1000);
 
-    if (hasError) return;
-
-    // --- Подготовка полезной нагрузки для sendData ---
-    // Вариант A: мы передаем данные клиентом в Telegram. Бот получит update с полем message.web_app_data.data
-    // Рекомендуется на сервере (в n8n) парсить JSON из message.web_app_data.data и использовать message.chat.id / message.from и т.д.
-    const now = new Date().toISOString();
-
-    // Если доступно, берём информацию из Telegram.WebApp.initDataUnsafe (не доверяйте на стороне сервера, используйте только как "подсказку")
-    let tgUser = null;
-    try {
-      if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-        tgUser = Telegram.WebApp.initDataUnsafe.user;
-      }
-    } catch (e) {
-      tgUser = null;
-    }
-
-    const payload = {
-      meta: {
-        sentAt: now,
-        webAppVersion: (window.Telegram && Telegram.WebApp && Telegram.WebApp.version) ? Telegram.WebApp.version : null,
-        locale: (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.locale) || null,
-        userHint: tgUser // необязательное, для удобства — полноценную верификацию делайте на сервере
-      },
-      form: {
-        description: description.value.trim(),
-        tripCost: tripCost.value.trim() ? Number(tripCost.value.trim()) : null,
-        partsCost: partsCost.value.trim() ? Number(partsCost.value.trim()) : null
-      }
-    };
-
-    // --- UX: блокируем кнопку, показываем статус ---
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Отправка...';
-    infoText.textContent = 'Отправляем данные в бот...';
-
-    try {
-      if (window.Telegram && Telegram.WebApp && typeof Telegram.WebApp.sendData === 'function') {
-        // Отправляем строку (Telegram поместит её в message.web_app_data.data)
+  sendBtn.addEventListener('click', async ()=>{
+    if(typeof window.Telegram === 'object' && typeof Telegram.WebApp === 'object'){
+      const payload = { debugPing: true, ts: new Date().toISOString() };
+      try{
         Telegram.WebApp.sendData(JSON.stringify(payload));
-
-        // По UX закроем WebApp (не обязательно — но обычно ожидаемо)
-        try { Telegram.WebApp.close(); } catch(e) { /* ignore */ }
-
-        // Показать локальный успех — фактическая доставка проверяется в боте/n8n
-        successMessage.style.display = 'block';
-        infoText.textContent = 'Данные отправлены. Они будут обработаны в workflow.';
-      } else {
-        // Если Telegram.WebApp отсутствует (страница открыта не из WebApp) — сообщаем пользователю
-        infoText.textContent = 'Ошибка: Telegram.WebApp недоступен. Откройте мини-приложение через Telegram.';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Отправить';
-        return;
+        log('Вызван Telegram.WebApp.sendData() с payload: ' + JSON.stringify(payload));
+        alert('Вызван sendData(). Проверьте, пришло ли update на ваш webhook в n8n (message.web_app_data.data).');
+      }catch(e){
+        log('Ошибка sendData: ' + e.message);
+        alert('Ошибка sendData: ' + e.message);
       }
-    } catch (err) {
-      console.error('sendData error', err);
-      infoText.textContent = 'Ошибка при отправке данных — попробуйте снова.';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Отправить';
+    } else {
+      alert('Telegram.WebApp недоступен — откройте приложение через кнопку в боте (не по прямой ссылке).');
+    }
+  });
+
+  fallbackBtn.addEventListener('click', async ()=>{
+    // --- РАСКОММЕНТИРУЙТЕ / ЗАПОЛНИТЕ для отладки ---
+    const N8N_WEBHOOK = 'https://florencia-tachistoscopic-snidely.ngrok-free.dev/webhook-test/f43c5c03-ca03-4394-b3f4-6562f5d9d65a/webhook'; // <-- вставьте сюда ваш тестовый webhook n8n, например: https://your-n8n.example.com/webhook/test
+    if(!N8N_WEBHOOK){
+      alert('Fallback отключён: вставьте URL вашего n8n webhook в переменную N8N_WEBHOOK в коде.');
       return;
     }
-
-    // Очистка полей (локально)
-    description.value = '';
-    tripCost.value = '';
-    partsCost.value = '';
-    submitBtn.textContent = 'Отправлено';
-    setTimeout(() => {
-      // Сброс кнопки через пару секунд, если окно не закрылось
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Отправить';
-    }, 2000);
+    const payload = { debugFallback: true, ts: new Date().toISOString(), userHint: Telegram?.WebApp?.initDataUnsafe || null };
+    try{
+      const res = await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Debug': 'true' },
+        body: JSON.stringify(payload)
+      });
+      const txt = await res.text();
+      log('Fallback отправлен, ответ n8n: ' + txt.slice(0,200));
+      alert('Fallback отправлен. Ответ: ' + txt.slice(0,200));
+    }catch(e){
+      log('Fallback failed: ' + e.message);
+      alert('Ошибка отправки в n8n: ' + e.message);
+    }
   });
 </script>
-</body>
-</html>
