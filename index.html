@@ -3,258 +3,299 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Mini App - Заявка на ремонт</title>
+  <title>Диагностика Telegram Mini App</title>
   <style>
     body { font-family: Arial, sans-serif; background:#f5f5f5; display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; }
-    .container { background:#fff; padding:20px 30px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:100%; max-width:420px; }
-    h2 { text-align:center; margin-bottom:18px; }
-    label { display:block; margin-top:10px; font-weight:600; }
-    input[type="text"], textarea { width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box; transition:border-color .15s; }
-    textarea { resize:vertical; min-height:110px; }
-    .error-message { color:#c00; font-size:12px; display:none; margin-top:4px; }
-    input.error, textarea.error { border-color:#c00; }
-    button { width:100%; padding:10px; margin-top:18px; background:#2a9d8f; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:16px; }
-    button[disabled] { opacity:.6; cursor:not-allowed; }
-    .success-message { display:none; margin-top:12px; color:green; text-align:center; }
-    .info { font-size:12px; color:#666; margin-top:8px; text-align:center; }
+    .container { background:#fff; padding:20px 30px; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); width:100%; max-width:600px; }
+    h2 { text-align:center; margin-bottom:18px; color:#333; }
+    .test-section { margin-bottom:20px; padding:15px; border:1px solid #ddd; border-radius:8px; }
+    .test-section h3 { margin:0 0 10px 0; font-size:16px; }
+    .result { padding:8px; margin:8px 0; border-radius:4px; }
+    .success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
+    .error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
+    .warning { background:#fff3cd; color:#856404; border:1px solid #ffeeba; }
+    .info { background:#d1ecf1; color:#0c5460; border:1px solid #bee5eb; }
+    pre { background:#f8f9fa; padding:10px; border-radius:4px; overflow-x:auto; font-size:12px; }
+    button { padding:8px 15px; margin:5px 0; border:none; border-radius:4px; cursor:pointer; }
+    .btn-test { background:#007bff; color:white; }
+    .btn-clear { background:#6c757d; color:white; }
+    .clear-btn { background:#dc3545; color:white; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Заявка на ремонт</h2>
+  <h2>🔍 Диагностика Telegram Mini App</h2>
 
-  <label for="description">Описание ремонта</label>
-  <textarea id="description" rows="6" placeholder="Напишите описание проблемы"></textarea>
-  <div class="error-message" id="descError">Пожалуйста, заполните описание ремонта.</div>
+  <!-- Проверка 1: Telegram WebApp API -->
+  <div class="test-section">
+    <h3>1️⃣ Проверка Telegram WebApp API</h3>
+    <div id="api-test"></div>
+    <button class="btn-test" onclick="checkTelegramAPI()">Проверить API</button>
+  </div>
 
-  <label for="trip-cost">Стоимость выезда (₽)</label>
-  <input type="text" id="trip-cost" placeholder="Введите сумму в рублях или оставьте пустым">
-  <div class="error-message" id="tripError">Введите корректное число или оставьте пустым.</div>
+  <!-- Проверка 2: initData -->
+  <div class="test-section">
+    <h3>2️⃣ Проверка initData</h3>
+    <div id="initdata-test"></div>
+    <button class="btn-test" onclick="checkInitData()">Проверить initData</button>
+    <button class="btn-clear" onclick="clearInitData()">Очистить initData (симуляция прямого открытия)</button>
+  </div>
 
-  <label for="parts-cost">Стоимость запчастей (₽)</label>
-  <input type="text" id="parts-cost" placeholder="Введите сумму в рублях или оставьте пустым">
-  <div class="error-message" id="partsError">Введите корректное число или оставьте пустым.</div>
+  <!-- Проверка 3: User data -->
+  <div class="test-section">
+    <h3>3️⃣ Проверка данных пользователя</h3>
+    <div id="user-test"></div>
+    <button class="btn-test" onclick="checkUserData()">Проверить пользователя</button>
+  </div>
 
-  <button id="submitBtn">Отправить</button>
-  <div class="success-message" id="successMessage">Заявка отправлена в бот ✅</div>
-  <div class="info" id="infoText">Данные отправляются через Telegram Bot в ваш webhook для обработки workflow.</div>
+  <!-- Проверка 4: Отправка данных -->
+  <div class="test-section">
+    <h3>4️⃣ Тест отправки данных</h3>
+    <div id="send-test"></div>
+    <button class="btn-test" onclick="testSendData()">Тест отправки через sendData</button>
+    <button class="btn-test" onclick="testSendToWebhook()">Тест отправки в webhook</button>
+  </div>
+
+  <!-- Инструкции -->
+  <div class="test-section">
+    <h3>📋 Инструкции по диагностике</h3>
+    <div class="info">
+      <strong>Для полной диагностики:</strong><br>
+      1. Откройте эту страницу через кнопку бота в Telegram<br>
+      2. Запустите все тесты по порядку<br>
+      3. Сделайте скриншот результатов<br>
+      4. Сравните с результатами при прямом открытии страницы
+    </div>
+  </div>
 </div>
 
 <script>
-  // --- Элементы ---
-  const submitBtn = document.getElementById('submitBtn');
-  const successMessage = document.getElementById('successMessage');
-  const infoText = document.getElementById('infoText');
+// Функция для отображения результатов
+function showResult(containerId, message, type = 'info') {
+  const container = document.getElementById(containerId);
+  const div = document.createElement('div');
+  div.className = `result ${type}`;
+  div.innerHTML = message;
+  container.appendChild(div);
+}
 
-  // --- Валидация и отправка ---
-  submitBtn.addEventListener('click', async () => {
-    const description = document.getElementById('description');
-    const tripCost = document.getElementById('trip-cost');
-    const partsCost = document.getElementById('parts-cost');
+// Очистка контейнера
+function clearContainer(containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+}
 
-    const descError = document.getElementById('descError');
-    const tripError = document.getElementById('tripError');
-    const partsError = document.getElementById('partsError');
-
-    let hasError = false;
-
-    // Описание обязательно
-    if (!description.value.trim()) {
-      description.classList.add('error');
-      descError.style.display = 'block';
-      hasError = true;
+// 1. Проверка Telegram API
+function checkTelegramAPI() {
+  clearContainer('api-test');
+  
+  let result = '';
+  let type = 'error';
+  
+  if (window.Telegram && Telegram.WebApp) {
+    result += '<strong>✅ Telegram.WebApp доступен</strong><br>';
+    result += `Версия: ${Telegram.WebApp.version || 'неизвестно'}<br>`;
+    result += `Платформа: ${Telegram.WebApp.platform || 'неизвестно'}<br>`;
+    result += `Цветовая схема: ${Telegram.WebApp.colorScheme || 'неизвестно'}<br>`;
+    
+    // Проверяем основные методы
+    if (typeof Telegram.WebApp.sendData === 'function') {
+      result += '✅ Метод sendData доступен<br>';
     } else {
-      description.classList.remove('error');
-      descError.style.display = 'none';
+      result += '❌ Метод sendData НЕ доступен<br>';
     }
-
-    // Стоимости: либо пусто, либо валидное число
-    if (tripCost.value.trim() && isNaN(tripCost.value.trim())) {
-      tripCost.classList.add('error');
-      tripError.style.display = 'block';
-      hasError = true;
+    
+    if (Telegram.WebApp.initDataUnsafe) {
+      result += '✅ initDataUnsafe доступен<br>';
     } else {
-      tripCost.classList.remove('error');
-      tripError.style.display = 'none';
+      result += '❌ initDataUnsafe НЕ доступен<br>';
     }
+    
+    type = 'success';
+  } else {
+    result = '<strong>❌ Telegram.WebApp НЕ доступен</strong><br>';
+    result += 'Это означает, что страница открыта НЕ через Telegram бота<br>';
+    result += 'Возможные причины:<br>';
+    result += '• Прямое открытие в браузере<br>';
+    result += '• Неправильный домен в BotFather<br>';
+    result += '• Проблемы с кнопкой меню';
+    type = 'error';
+  }
+  
+  showResult('api-test', result, type);
+}
 
-    if (partsCost.value.trim() && isNaN(partsCost.value.trim())) {
-      partsCost.classList.add('error');
-      partsError.style.display = 'block';
-      hasError = true;
+// 2. Проверка initData
+function checkInitData() {
+  clearContainer('initdata-test');
+  
+  let result = '';
+  let type = 'error';
+  
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) {
+    const initData = Telegram.WebApp.initData;
+    result += '<strong>✅ initData найден</strong><br>';
+    result += `Длина: ${initData.length} символов<br>`;
+    result += `Первые 100 символов: ${initData.substring(0, 100)}...<br>`;
+    
+    // Парсим параметры
+    const params = {};
+    initData.split('&').forEach(param => {
+      const [key, value] = param.split('=');
+      if (key && value) {
+        params[decodeURIComponent(key)] = decodeURIComponent(value);
+      }
+    });
+    
+    result += '<br><strong>Параметры:</strong><br>';
+    result += `<pre>${JSON.stringify(params, null, 2)}</pre>`;
+    
+    // Проверяем обязательные параметры
+    if (params.auth_date && params.user && params.hash) {
+      type = 'success';
+      result += '<br><strong>✅ Все обязательные параметры присутствуют</strong>';
     } else {
-      partsCost.classList.remove('error');
-      partsError.style.display = 'none';
+      type = 'warning';
+      result += '<br><strong>⚠️ Отсутствуют обязательные параметры</strong>';
     }
+    
+  } else {
+    result = '<strong>❌ initData НЕ найден</strong><br>';
+    result += 'Страница открыта напрямую, не через Telegram бота';
+    type = 'error';
+  }
+  
+  showResult('initdata-test', result, type);
+}
 
-    if (hasError) return;
+// Очистка initData для симуляции прямого открытия
+function clearInitData() {
+  if (window.Telegram && Telegram.WebApp) {
+    // Сохраняем оригинал
+    if (!window.originalInitData) {
+      window.originalInitData = Telegram.WebApp.initData;
+    }
+    // "Очищаем"
+    Telegram.WebApp.initData = '';
+    showResult('initdata-test', 'initData очищен (симуляция прямого открытия). Нажмите "Проверить API" для обновления статуса.', 'warning');
+  }
+}
 
-    // --- Подготовка полезной нагрузки для sendData ---
-    // Вариант A: мы передаем данные клиентом в Telegram. Бот получит update с полем message.web_app_data.data
-    // Рекомендуется на сервере (в n8n) парсить JSON из message.web_app_data.data и использовать message.chat.id / message.from и т.д.
-    const now = new Date().toISOString();
+// 3. Проверка данных пользователя
+function checkUserData() {
+  clearContainer('user-test');
+  
+  let result = '';
+  let type = 'error';
+  
+  if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe) {
+    const user = Telegram.WebApp.initDataUnsafe.user;
+    
+    if (user) {
+      result += '<strong>✅ Данные пользователя найдены</strong><br>';
+      result += `<pre>${JSON.stringify(user, null, 2)}</pre>`;
+      type = 'success';
+    } else {
+      result = '<strong>❌ Данные пользователя НЕ найдены</strong><br>';
+      result += 'initDataUnsafe.user равен null или undefined';
+      type = 'error';
+    }
+  } else {
+    result = '<strong>❌ Невозможно получить данные пользователя</strong><br>';
+    result += 'Telegram.WebApp.initDataUnsafe недоступен';
+    type = 'error';
+  }
+  
+  showResult('user-test', result, type);
+}
 
-    // Если доступно, берём информацию из Telegram.WebApp.initDataUnsafe (не доверяйте на стороне сервера, используйте только как "подсказку")
-    let tgUser = null;
+// 4. Тест отправки данных
+function testSendData() {
+  clearContainer('send-test');
+  
+  let result = '';
+  let type = 'error';
+  
+  if (window.Telegram && Telegram.WebApp && typeof Telegram.WebApp.sendData === 'function') {
     try {
-      if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-        tgUser = Telegram.WebApp.initDataUnsafe.user;
-      }
-    } catch (e) {
-      tgUser = null;
+      const testData = {
+        type: 'test',
+        timestamp: new Date().toISOString(),
+        message: 'Тестовая отправка из диагностики'
+      };
+      
+      Telegram.WebApp.sendData(JSON.stringify(testData));
+      
+      result = '<strong>✅ sendData выполнен успешно</strong><br>';
+      result += 'Данные отправлены в Telegram. Проверьте бота для получения сообщения.<br>';
+      result += `Тестовые данные: <pre>${JSON.stringify(testData, null, 2)}</pre>`;
+      type = 'success';
+      
+    } catch (error) {
+      result = `<strong>❌ Ошибка при отправке: ${error.message}</strong>`;
+      type = 'error';
     }
+  } else {
+    result = '<strong>❌ Невозможно отправить данные</strong><br>';
+    result += 'Telegram.WebApp.sendData недоступен';
+    type = 'error';
+  }
+  
+  showResult('send-test', result, type);
+}
 
-    const payload = {
-      meta: {
-        sentAt: now,
-        webAppVersion: (window.Telegram && Telegram.WebApp && Telegram.WebApp.version) ? Telegram.WebApp.version : null,
-        locale: (window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.locale) || null,
-        userHint: tgUser // необязательное, для удобства — полноценную верификацию делайте на сервере
-      },
-      form: {
-        description: description.value.trim(),
-        tripCost: tripCost.value.trim() ? Number(tripCost.value.trim()) : null,
-        partsCost: partsCost.value.trim() ? Number(partsCost.value.trim()) : null
-      }
-    };
-
-    // --- UX: блокируем кнопку, показываем статус ---
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Отправка...';
-    infoText.textContent = 'Отправляем данные в бот...';
-
-    try {
-      if (window.Telegram && Telegram.WebApp && typeof Telegram.WebApp.sendData === 'function') {
-        // Отправляем строку (Telegram поместит её в message.web_app_data.data)
-        Telegram.WebApp.sendData(JSON.stringify(payload));
-
-        // По UX закроем WebApp (не обязательно — но обычно ожидаемо)
-        try { Telegram.WebApp.close(); } catch(e) { /* ignore */ }
-
-        // Показать локальный успех — фактическая доставка проверяется в боте/n8n
-        successMessage.style.display = 'block';
-        infoText.textContent = 'Данные отправлены. Они будут обработаны в workflow.';
-      } else {
-        // Если Telegram.WebApp отсутствует (страница открыта не из WebApp) — сообщаем пользователю
-        infoText.textContent = 'Ошибка: Telegram.WebApp недоступен. Откройте мини-приложение через Telegram.';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Отправить';
-        return;
-      }
-    } catch (err) {
-      console.error('sendData error', err);
-      infoText.textContent = 'Ошибка при отправке данных — попробуйте снова.';
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Отправить';
-      return;
-    }
-
-    // Очистка полей (локально)
-    description.value = '';
-    tripCost.value = '';
-    partsCost.value = '';
-    submitBtn.textContent = 'Отправлено';
-    setTimeout(() => {
-      // Сброс кнопки через пару секунд, если окно не закрылось
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Отправить';
-    }, 2000);
+// Тест отправки в внешний webhook
+function testSendToWebhook() {
+  clearContainer('send-test');
+  
+  let result = '';
+  let type = 'warning';
+  
+  // Здесь можно настроить URL вашего webhook для тестирования
+  const webhookUrl = prompt('Введите URL вашего webhook (например, URL n8n или обработчика):', '');
+  
+  if (!webhookUrl) {
+    showResult('send-test', 'URL webhook не указан', 'error');
+    return;
+  }
+  
+  const testData = {
+    type: 'webhook_test',
+    timestamp: new Date().toISOString(),
+    initData: Telegram.WebApp ? Telegram.WebApp.initData : null,
+    userData: Telegram.WebApp && Telegram.WebApp.initDataUnsafe ? Telegram.WebApp.initDataUnsafe : null,
+    message: 'Тестовая отправка в webhook'
+  };
+  
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(testData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    result = '<strong>✅ Запрос в webhook выполнен</strong><br>';
+    result += `Статус ответа: ${response.status}<br>`;
+    result += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    showResult('send-test', result, 'success');
+  })
+  .catch(error => {
+    result = `<strong>❌ Ошибка при отправке в webhook: ${error.message}</strong>`;
+    showResult('send-test', result, 'error');
   });
+}
+
+// Автоматическая проверка при загрузке
+window.addEventListener('load', function() {
+  // Небольшая задержка для инициализации Telegram WebApp
+  setTimeout(checkTelegramAPI, 100);
+  setTimeout(checkInitData, 200);
+  setTimeout(checkUserData, 300);
+});
 </script>
+
 </body>
 </html>
-<!-- --- DEBUG OVERLAY: вставьте в index.html --- -->
-<style>
-  #tg-debug {
-    position: fixed; right: 12px; bottom: 12px; z-index: 9999;
-    background: rgba(0,0,0,0.85); color: #fff; padding: 10px 12px; border-radius: 8px;
-    font-family: Arial, sans-serif; font-size:13px; width:320px; box-shadow:0 6px 20px rgba(0,0,0,0.3);
-  }
-  #tg-debug button{ margin-top:8px; width:100%; padding:8px; border-radius:6px; border:none; cursor:pointer; }
-  #tg-debug .ok{ color:#8be78b; font-weight:700; }
-  #tg-debug .bad{ color:#ff8b8b; font-weight:700; }
-  #tg-debug small{ color:#ddd; display:block; margin-top:6px; font-size:11px; }
-</style>
-
-<div id="tg-debug" role="region" aria-label="Telegram WebApp debug">
-  <div>Telegram.WebApp: <span id="tg-status">проверка...</span></div>
-  <div style="margin-top:6px;">initData type: <span id="tg-init">—</span></div>
-  <button id="tg-send" style="background:#2a9d8f;color:#fff;">Отправить тест через Telegram.WebApp.sendData()</button>
-  <button id="tg-fallback" style="background:#6c757d;color:#fff;">Fallback → отправить прямо в n8n (для отладки)</button>
-  <small id="tg-log">Логи: —</small>
-</div>
-<script>
-  const statusEl = document.getElementById('tg-status');
-  const initEl = document.getElementById('tg-init');
-  const logEl = document.getElementById('tg-log');
-  const sendBtn = document.getElementById('tg-send');
-  const fallbackBtn = document.getElementById('tg-fallback');
-
-  function log(msg){
-    console.log('[tg-debug]', msg);
-    logEl.textContent = 'Логи: ' + msg;
-  }
-
-  function updateStatus(){
-    const hasTg = (typeof window.Telegram === 'object' && typeof Telegram.WebApp === 'object');
-    if(hasTg){
-      statusEl.innerHTML = '<span class="ok">доступен</span>';
-      initEl.textContent = (typeof Telegram.WebApp.initData === 'string') ? 'string' : String(typeof Telegram.WebApp.initData);
-      log('Telegram.WebApp присутствует. initDataUnsafe: ' + JSON.stringify(Telegram.WebApp.initDataUnsafe || {}));
-    } else {
-      statusEl.innerHTML = '<span class="bad">отсутствует</span>';
-      initEl.textContent = 'n/a';
-      log('Telegram.WebApp не найден. Страница, вероятно, открыта не через Web App.');
-    }
-  }
-
-  updateStatus();
-
-  // пробуем обновлять раз в секунду первые 5 секунд (иногда объект инициализируется чуть позже)
-  let tries = 0;
-  const interval = setInterval(()=>{
-    tries++;
-    updateStatus();
-    if(tries>5) clearInterval(interval);
-  }, 1000);
-
-  sendBtn.addEventListener('click', async ()=>{
-    if(typeof window.Telegram === 'object' && typeof Telegram.WebApp === 'object'){
-      const payload = { debugPing: true, ts: new Date().toISOString() };
-      try{
-        Telegram.WebApp.sendData(JSON.stringify(payload));
-        log('Вызван Telegram.WebApp.sendData() с payload: ' + JSON.stringify(payload));
-        alert('Вызван sendData(). Проверьте, пришло ли update на ваш webhook в n8n (message.web_app_data.data).');
-      }catch(e){
-        log('Ошибка sendData: ' + e.message);
-        alert('Ошибка sendData: ' + e.message);
-      }
-    } else {
-      alert('Telegram.WebApp недоступен — откройте приложение через кнопку в боте (не по прямой ссылке).');
-    }
-  });
-
-  fallbackBtn.addEventListener('click', async ()=>{
-    // --- РАСКОММЕНТИРУЙТЕ / ЗАПОЛНИТЕ для отладки ---
-    const N8N_WEBHOOK = 'https://florencia-tachistoscopic-snidely.ngrok-free.dev/webhook-test/f43c5c03-ca03-4394-b3f4-6562f5d9d65a/webhook'; // <-- вставьте сюда ваш тестовый webhook n8n, например: https://your-n8n.example.com/webhook/test
-    if(!N8N_WEBHOOK){
-      alert('Fallback отключён: вставьте URL вашего n8n webhook в переменную N8N_WEBHOOK в коде.');
-      return;
-    }
-    const payload = { debugFallback: true, ts: new Date().toISOString(), userHint: Telegram?.WebApp?.initDataUnsafe || null };
-    try{
-      const res = await fetch(N8N_WEBHOOK, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Debug': 'true' },
-        body: JSON.stringify(payload)
-      });
-      const txt = await res.text();
-      log('Fallback отправлен, ответ n8n: ' + txt.slice(0,200));
-      alert('Fallback отправлен. Ответ: ' + txt.slice(0,200));
-    }catch(e){
-      log('Fallback failed: ' + e.message);
-      alert('Ошибка отправки в n8n: ' + e.message);
-    }
-  });
-</script>
