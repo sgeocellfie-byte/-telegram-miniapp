@@ -97,6 +97,16 @@
       border-radius: 5px;
       font-size: 14px;
     }
+    .async-notice {
+      display: none;
+      background: #d1edff;
+      border: 1px solid #0066cc;
+      color: #004499;
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 5px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -121,6 +131,7 @@
   <div class="success-message" id="successMessage">Заявка отправлена!</div>
   <div class="error-submit" id="errorSubmit">Ошибка отправки. Попробуйте снова.</div>
   <div class="pending-notice" id="pendingNotice">✅ Заявка отправлена! Результат придет в чат Telegram.</div>
+  <div class="async-notice" id="asyncNotice">🚀 Заявка отправлена АСИНХРОННО! Можете закрыть экран.</div>
 </div>
 
 <script>
@@ -135,6 +146,7 @@
   const successMessage = document.getElementById('successMessage');
   const errorSubmit = document.getElementById('errorSubmit');
   const pendingNotice = document.getElementById('pendingNotice');
+  const asyncNotice = document.getElementById('asyncNotice');
 
   // Генерация уникального ID операции
   function generateOperationId() {
@@ -173,6 +185,38 @@
     });
   }
 
+  // ✅ НАСТОЯЩАЯ АСИНХРОННАЯ ОТПРАВКА (БЕЗ ОЖИДАНИЯ ОТВЕТА!)
+  function sendAsyncData(formData, operationId) {
+    console.log('🚀 Начинаю АСИНХРОННУЮ отправку...');
+    
+    // 🚀 ОТПРАВЛЯЕМ БЕЗ ОЖИДАНИЯ ОТВЕТА
+    fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': API_KEY
+      },
+      body: JSON.stringify(formData)
+    })
+    .then(response => {
+      // Обработка ответа в фоне (не блокирует интерфейс)
+      if (response.ok || response.status === 200) {
+        console.log('✅ Асинхронная отправка успешна');
+        // Обновляем статус операции
+        const operationData = JSON.parse(localStorage.getItem(`operation_${operationId}`) || '{}');
+        operationData.status = 'sent';
+        operationData.timestamp = Date.now();
+        localStorage.setItem(`operation_${operationId}`, JSON.stringify(operationData));
+      } else {
+        console.log('⚠️ Ошибка в асинхронной отправке');
+      }
+    })
+    .catch(error => {
+      console.log('❌ Ошибка асинхронной отправки (не критично):', error);
+      // В случае ошибки просто логируем - пользователь уже получил подтверждение
+    });
+  }
+
   submitBtn.addEventListener('click', async () => {
     const description = document.getElementById('description');
     const tripCost = document.getElementById('trip-cost');
@@ -186,6 +230,7 @@
     successMessage.style.display = 'none';
     errorSubmit.style.display = 'none';
     pendingNotice.style.display = 'none';
+    asyncNotice.style.display = 'none';
 
     let hasError = false;
 
@@ -247,33 +292,23 @@
     submitBtn.textContent = 'Отправка...';
 
     try {
-      // Асинхронная отправка в n8n (НОВОЕ: без ожидания ответа)
-      const response = await fetch(N8N_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': API_KEY  // СОХРАНЯЕМ ваш оригинальный X-API-Key заголовок
-        },
-        body: JSON.stringify(formData)
-      });
+      // ✅ МГНОВЕННО ПОКАЗЫВАЕМ УСПЕХ (до отправки!)
+      asyncNotice.style.display = 'block';
+      
+      // Очистка полей
+      description.value = '';
+      tripCost.value = '';
+      partsCost.value = '';
 
-      // НОВОЕ: Не ждем ответа - сразу показываем успех
-      if (response.ok || response.status === 200) {
-        // ✅ УСПЕХ! Заявка отправлена
-        pendingNotice.style.display = 'block';
-        
-        // Очистка полей (как и раньше)
-        description.value = '';
-        tripCost.value = '';
-        partsCost.value = '';
+      // 🚀 ЗАПУСКАЕМ АСИНХРОННУЮ ОТПРАВКУ (НЕ ЖДЕМ ОТВЕТА!)
+      sendAsyncData(formData, operationId);
 
-        // Можно закрыть Mini App через 3 секунды (НОВОЕ: пользователь может закрыть сам)
-        setTimeout(() => {
-          tg.close();
-        }, 3000);
-      } else {
-        throw new Error('Ошибка сервера');
-      }
+      // ✅ МГНОВЕННО ПОКАЗЫВАЕМ ПОДТВЕРЖДЕНИЕ
+      setTimeout(() => {
+        // Можно закрыть Mini App сразу или через 2 секунды
+        tg.close();
+      }, 2000);
+
     } catch (error) {
       console.error('Ошибка отправки:', error);
       errorSubmit.style.display = 'block';
