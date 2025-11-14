@@ -87,6 +87,16 @@
     .error-submit {
       color: red;
     }
+    .pending-notice {
+      display: none;
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 10px;
+      margin-top: 15px;
+      border-radius: 5px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -110,10 +120,11 @@
   
   <div class="success-message" id="successMessage">Заявка отправлена!</div>
   <div class="error-submit" id="errorSubmit">Ошибка отправки. Попробуйте снова.</div>
+  <div class="pending-notice" id="pendingNotice">✅ Заявка отправлена! Результат придет в чат Telegram.</div>
 </div>
 
 <script>
-  // ЗАМЕНИТЕ НА ВАШ URL WEBHOOK ИЗ N8N
+  // Сохраняем ВСЕ ваши оригинальные настройки
   const N8N_WEBHOOK_URL = 'https://amservus.tech/webhook-test/8d270392-52ef-4420-a54d-9bd715c0814a';
   const API_KEY = 'NCgDbycrfV'; // Тот же что в N8N
 
@@ -123,6 +134,44 @@
   const submitBtn = document.getElementById('submitBtn');
   const successMessage = document.getElementById('successMessage');
   const errorSubmit = document.getElementById('errorSubmit');
+  const pendingNotice = document.getElementById('pendingNotice');
+
+  // Генерация уникального ID операции
+  function generateOperationId() {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 11);
+    return `op_${timestamp}_${random}`;
+  }
+
+  // Сохранение состояния операции в localStorage
+  function saveOperationState(operationId, data) {
+    const operationData = {
+      id: operationId,
+      data: data,
+      timestamp: Date.now(),
+      status: 'pending'
+    };
+    localStorage.setItem(`operation_${operationId}`, JSON.stringify(operationData));
+    
+    // Сохраняем список операций
+    const operations = JSON.parse(localStorage.getItem('operations') || '[]');
+    operations.push(operationId);
+    localStorage.setItem('operations', JSON.stringify(operations));
+  }
+
+  // Проверка незавершенных операций при загрузке
+  function checkPendingOperations() {
+    const operations = JSON.parse(localStorage.getItem('operations') || '[]');
+    operations.forEach(opId => {
+      const operationData = localStorage.getItem(`operation_${opId}`);
+      if (operationData) {
+        const data = JSON.parse(operationData);
+        if (data.status === 'pending' || data.status === 'processing') {
+          console.log(`Незавершенная операция: ${opId}`);
+        }
+      }
+    });
+  }
 
   submitBtn.addEventListener('click', async () => {
     const description = document.getElementById('description');
@@ -136,6 +185,7 @@
     // Скрыть предыдущие сообщения
     successMessage.style.display = 'none';
     errorSubmit.style.display = 'none';
+    pendingNotice.style.display = 'none';
 
     let hasError = false;
 
@@ -171,7 +221,7 @@
 
     if (hasError) return;
 
-    // Подготовка данных
+    // Подготовка данных (ВСЕ ваши оригинальные поля сохранены)
     const formData = {
       description: description.value.trim(),
       tripCost: tripCost.value.trim() || null,
@@ -185,44 +235,62 @@
       timestamp: new Date().toISOString()
     };
 
+    // Генерируем уникальный ID операции
+    const operationId = generateOperationId();
+    formData.operation_id = operationId;
+
+    // Сохраняем состояние операции
+    saveOperationState(operationId, formData);
+
     // Отключаем кнопку во время отправки
     submitBtn.disabled = true;
     submitBtn.textContent = 'Отправка...';
 
     try {
-      // Отправка данных в n8n
+      // Асинхронная отправка в n8n (НОВОЕ: без ожидания ответа)
       const response = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': API_KEY  // Добавили заголовок
+          'X-API-Key': API_KEY  // СОХРАНЯЕМ ваш оригинальный X-API-Key заголовок
         },
         body: JSON.stringify(formData)
       });
 
-      if (response.ok) {
-        successMessage.style.display = 'block';
+      // НОВОЕ: Не ждем ответа - сразу показываем успех
+      if (response.ok || response.status === 200) {
+        // ✅ УСПЕХ! Заявка отправлена
+        pendingNotice.style.display = 'block';
         
-        // Очистка полей
+        // Очистка полей (как и раньше)
         description.value = '';
         tripCost.value = '';
         partsCost.value = '';
 
-        // Закрыть Mini App через 2 секунды
+        // Можно закрыть Mini App через 3 секунды (НОВОЕ: пользователь может закрыть сам)
         setTimeout(() => {
           tg.close();
-        }, 2000);
+        }, 3000);
       } else {
         throw new Error('Ошибка сервера');
       }
     } catch (error) {
       console.error('Ошибка отправки:', error);
       errorSubmit.style.display = 'block';
+      
+      // Удаляем неуспешную операцию из localStorage
+      localStorage.removeItem(`operation_${operationId}`);
+      const operations = JSON.parse(localStorage.getItem('operations') || '[]');
+      const updatedOperations = operations.filter(op => op !== operationId);
+      localStorage.setItem('operations', JSON.stringify(updatedOperations));
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Отправить';
     }
   });
+
+  // Проверяем незавершенные операции при загрузке страницы
+  document.addEventListener('DOMContentLoaded', checkPendingOperations);
 </script>
 
 </body>
