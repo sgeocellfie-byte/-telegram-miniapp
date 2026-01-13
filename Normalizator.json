@@ -1,0 +1,574 @@
+// =====================================================================
+// N8N CODE NODE: OEM Cartridge Code Validator & Normalizer (COMPLETE)
+// =====================================================================
+// Полная версия со ВСЕМИ правилами валидации
+// Включает: определение типов кодов, технические/маркетинговые, поиск альтернатив
+// Вход: Массив items с полями { vendor, code, alternativeNames, ... }
+// Выход: Нормализованные коды + детальная валидация
+// =====================================================================
+
+// ======================== ПРАВИЛА ВАЛИДАЦИИ ==========================
+
+const VALIDATION_RULES = {
+  
+  // Canon
+  Canon: {
+    marketing: [
+      /^CRG-\d{3}[A-Z]?$/i,           // CRG-725, CRG-056H
+      /^C-?EXV-?\d{1,2}[A-Z]{0,2}$/i, // C-EXV49, CEXV51LC
+      /^7\d{2}[A-Z]?$/,                // 732, 706, 719
+      /^\d{3}H?$/,                     // 045, 056H
+      /^EP-\d{2}$/i,                   // EP-27 (БЕЗ -D/-F)
+      /^FX-\d{1,2}$/i,                 // FX-10 (БЕЗ -R/-S)
+      /^NPG-?\d{1,2}[A-Z]?$/i,         // NPG-13, NPG-28
+      /^BCI-\d{1,2}[A-Z]*$/i,          // BCI-3e, BCI-6
+      /^PGI-\d{1,3}[A-Z]*$/i,          // PGI-520
+      /^CLI-\d{1,3}[A-Z]*$/i,          // CLI-521
+    ],
+    technical: [
+      /^\d{4}[A-Z]\d{3}$/,             // 3007C002, 0279B002
+    ],
+    blacklist: [
+      /^.*R$/,                         // 703R, 712R (Remanufactured)
+      /^.*S$/,                         // 725S (совместимые)
+      /\d+-\d+\.?\d*K$/i,             // 708-2.5K, 706-5K
+      /^.*HR$/,                        // 719HR
+      /^.*SER$/,                       // C5500SER
+      /^\d{3}XXH$/i,                  // 706XXH, 725XXH
+      /^EP-\d{2}[DF]$/i,              // EP-27D, EP-27F
+      /^FX-\d{2}[RS]$/i,              // FX-10R, FX-10S
+    ],
+  },
+  
+  // HP
+  HP: {
+    marketing: [
+      /^[A-Z]{1,2}\d{3,4}[A-Z]{1,2}$/i, // CE285A, Q2612A
+      /^[A-Z]\d{4}[A-Z]{1,2}$/i,        // W2200X
+      /^\d{2}[A-Z]$/i,                   // 85A, 12A
+    ],
+    officialPostfixes: ['A', 'X', 'AD', 'AF', 'AM', 'C', 'XC', 'D', 'Y', 'M', 'BK', 'K'],
+    dualPack: ['AD', 'AF'], // ОФИЦИАЛЬНЫЕ Dual Pack
+    blacklist: [
+      /XXL/i,                          // Любой XXL
+      /XL$/i,                          // XL в конце
+      /HC$/i,                          // HC в конце (High Capacity совместимые)
+      /-XL$/i,                         // -XL
+      /AX$/i,                          // Q2612AX
+      /ALD$/i,                         // Q2612ALD
+      /AC$/i,                          // Q2612AC
+      /AL$/i,                          // Q2612AL
+      /XK$/i,                          // Q2612XK
+      /LD$/i,                          // Q2612LD
+      /XC$/i,                          // Q2612XC
+      /XD$/i,                          // Q2612XD
+      /AS$/i,                          // Q2612AS
+      /XS$/i,                          // Q2612XS
+      /XR$/i,                          // Q2612XR
+      /AV$/i,                          // Q2612AV
+      /XV$/i,                          // Q2612XV
+      /AF$/i,                          // Q2612AF (кроме Dual Pack!)
+      /^\d{6,}$/,                      // 300000
+      /^C\d{4}DN$/i,                   // C9600DN
+    ],
+  },
+  
+  // Brother
+  Brother: {
+    marketing: [
+      /^TN-\d{3,4}$/i,                 // TN-2075, TN-241
+      /^DR-\d{4}$/i,                   // DR-2080
+      /^LC-\d{3,4}[A-Z]*$/i,           // LC-123BK
+    ],
+    blacklist: [
+      /XXL/i,                          // TN-2335-XXL
+      /XL$/i,                          // TN-2335-XL
+      /^TN-\d{3,4}_\w+$/,              // TN-2335_S
+      /^TN-\d{3,4}T\w*$/i,            // TN-2175T, TN-241TBK
+    ],
+  },
+  
+  // Konica Minolta
+  'Konica Minolta': {
+    marketing: [
+      /^TN-\d{3}[A-Z]?$/i,             // TN-319K
+      /^TNP-\d{2}[A-Z]?$/i,            // TNP-49K
+      /^DR-\d{3}[A-Z]*$/i,             // DR-311
+      /^IU-\d{3}[A-Z]?$/i,             // IU-612K
+    ],
+    technical: [
+      /^A\d{2}[GW]\d{3,4}$/,           // A11G150, A95W250
+      /^\d{7,}$/,                      // 8938509
+    ],
+  },
+  
+  // Kyocera
+  Kyocera: {
+    marketing: [
+      /^TK-\d{3,4}[A-Z]?$/i,           // TK-1130, TK-8725K
+      /^FS-\d{3,4}[A-Z]?$/i,           // FS-1100
+    ],
+    technical: [
+      /^1T0[25]\w{6,}$/,               // 1T02NH0NL0
+    ],
+    blacklist: [
+      /XXL/i,                          // TK-170-XXL
+      /XL$/i,                          // TK-1130XL
+      /HC$/i,                          // TK-1170HC
+    ],
+  },
+  
+  // Samsung
+  Samsung: {
+    marketing: [
+      /^MLT-D\d{3}[A-Z]$/i,            // MLT-D101S
+      /^CLT-[KMCY]\d{3}[A-Z]$/i,       // CLT-K406S
+    ],
+    blacklist: [
+      /^.*_New chip.*$/i,
+      /^.*_\d+$/,
+    ],
+  },
+  
+  // Xerox
+  Xerox: {
+    marketing: [
+      /^006R\d{5}$/i,                  // 006R01573
+      /^108R\d{5}$/i,                  // 108R00909
+      /^113R\d{5}$/i,                  // 113R00730
+    ],
+  },
+  
+  // Ricoh
+  Ricoh: {
+    marketing: [
+      /^SP-\d{4}[A-Z]?$/i,             // SP-3500
+      /^84\d{4}$/,                     // 841886 (6 цифр)
+      /^88\d{4}$/,                     // 888261
+      /^40\d{4}$/,                     // 407165
+    ],
+    technical: [
+      /^\d{7,}$/,                      // 8420301 (7+ цифр)
+    ],
+  },
+  
+  // Oki
+  Oki: {
+    marketing: [
+      /^\d{8}$/,                       // 44250721
+    ],
+  },
+  
+  // Lexmark
+  Lexmark: {
+    marketing: [
+      /^[0-9]{2,5}[A-Z]{1,2}\d*$/i,    // 12A7305
+      /^C\d{3}[A-Z]\d[A-Z]$/i,         // C540A1KG
+    ],
+  },
+};
+
+// HP DUAL PACK - единственные коды с AD/AF которые официальные
+const HP_DUAL_PACK_CODES = [
+  'CE285AD', 'CE285AF',
+  'CB435AD', 'CB435AF', 
+  'CB436AD', 'CB436AF',
+  'CC530AD',
+  'CE278AD', 'CE278AF',
+  'CF218AD',
+  'CF244AD',
+  'Q2612AD',
+  'Q5942XD',
+];
+
+// Canon официальные постфиксы
+const CANON_OFFICIAL_POSTFIXES = ['H', 'L', 'BK', 'C', 'M', 'Y', 'LC', 'LM', 'LY', 'PBK'];
+
+// УНИВЕРСАЛЬНЫЙ ЧЕРНЫЙ СПИСОК - для ВСЕХ производителей
+const UNIVERSAL_BLACKLIST = [
+  /XXL/i,           // Любой XXL
+  /XL$/i,           // XL в конце
+  /-XL$/i,          // -XL
+  /HC$/i,           // HC в конце
+  /AX$/i,           // Q2612AX
+  /ALD$/i,          // Q2612ALD
+  /AC$/i,           // Q2612AC
+  /AL$/i,           // Q2612AL
+  /XK$/i,           // Q2612XK
+  /LD$/i,           // Q2612LD
+  /XC$/i,           // Q2612XC
+  /XD$/i,           // Q2612XD
+  /AS$/i,           // Q2612AS
+  /XS$/i,           // Q2612XS
+  /XR$/i,           // Q2612XR
+  /AV$/i,           // Q2612AV
+  /XV$/i,           // Q2612XV
+  /AF$/i,           // Q2612AF (кроме Dual Pack!)
+  /_\w+/,           // С подчеркиванием
+];
+
+// ======================== ФУНКЦИИ ВАЛИДАЦИИ ==========================
+
+/**
+ * Нормализует название производителя
+ */
+function normalizeVendor(vendor) {
+  if (!vendor) return null;
+  
+  vendor = vendor.trim().toUpperCase();
+  
+  const mapping = {
+    'HEWLETT-PACKARD': 'HP',
+    'HEWLETT PACKARD': 'HP',
+    'KONICA-MINOLTA': 'Konica Minolta',
+    'KONICAMINOLTA': 'Konica Minolta',
+    'BROTHER INTERNATIONAL': 'Brother',
+    'KONICA MINOLTA': 'Konica Minolta',
+  };
+  
+  if (mapping[vendor]) {
+    return mapping[vendor];
+  }
+  
+  // Title Case
+  return vendor.split(' ')
+    .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Проверяет, является ли код неофициальным
+ */
+function isUnofficial(code, vendor) {
+  code = code.toUpperCase().trim();
+  
+  // ИСКЛЮЧЕНИЕ: HP Dual Pack - проверяем ПЕРВЫМ
+  if (vendor === 'HP' && HP_DUAL_PACK_CODES.includes(code)) {
+    return { unofficial: false }; // Официальный HP Dual Pack
+  }
+  
+  // УНИВЕРСАЛЬНЫЕ проверки для ВСЕХ производителей
+  for (const pattern of UNIVERSAL_BLACKLIST) {
+    if (pattern.test(code)) {
+      return { unofficial: true, reason: 'Universal blacklist' };
+    }
+  }
+  
+  // Проверка D постфикса (после исключения HP AD!)
+  if (/D$/i.test(code) && !code.endsWith('AD')) {
+    return { unofficial: true, reason: 'D postfix' };
+  }
+  
+  // Проверяем специфичные blacklist для производителя
+  const rules = VALIDATION_RULES[vendor];
+  if (rules && rules.blacklist) {
+    for (const pattern of rules.blacklist) {
+      if (pattern.test(code)) {
+        return { unofficial: true, reason: 'Vendor blacklist' };
+      }
+    }
+  }
+  
+  return { unofficial: false };
+}
+
+/**
+ * Определяет тип кода: marketing, technical, unknown
+ */
+function identifyCodeType(code, vendor) {
+  const rules = VALIDATION_RULES[vendor];
+  if (!rules) return 'unknown';
+  
+  // Технический
+  if (rules.technical) {
+    for (const pattern of rules.technical) {
+      if (pattern.test(code)) {
+        return 'technical';
+      }
+    }
+  }
+  
+  // Маркетинговый
+  if (rules.marketing) {
+    for (const pattern of rules.marketing) {
+      if (pattern.test(code)) {
+        return 'marketing';
+      }
+    }
+  }
+  
+  return 'marketing'; // По умолчанию
+}
+
+/**
+ * Нормализует код (убирает постфиксы, исправляет форматирование)
+ */
+function normalizeCode(code, vendor) {
+  if (!code) return null;
+  code = code.trim().toUpperCase();
+  
+  // Canon
+  if (vendor === 'Canon') {
+    code = code.replace(/CEXV-?(\d+)/i, 'C-EXV$1');
+    if (/^CRG\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/CRG(\d+)/i, 'CRG-$1');
+    }
+    if (/^EP\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/EP(\d+)/i, 'EP-$1');
+    }
+    if (/^FX\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/FX(\d+)/i, 'FX-$1');
+    }
+    if (/^NPG\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/NPG(\d+)/i, 'NPG-$1');
+    }
+  }
+  
+  // Brother
+  if (vendor === 'Brother') {
+    if (/^TN\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/TN(\d+)/i, 'TN-$1');
+    }
+    if (/^DR\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/DR(\d+)/i, 'DR-$1');
+    }
+    if (/^LC\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/LC(\d+)/i, 'LC-$1');
+    }
+  }
+  
+  // Konica Minolta
+  if (vendor === 'Konica Minolta') {
+    if (/^TN\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/TN(\d+)/i, 'TN-$1');
+    }
+    if (/^TNP\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/TNP(\d+)/i, 'TNP-$1');
+    }
+    if (/^DR\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/DR(\d+)/i, 'DR-$1');
+    }
+  }
+  
+  // Kyocera
+  if (vendor === 'Kyocera') {
+    if (/^TK\d/i.test(code) && !code.includes('-')) {
+      code = code.replace(/TK(\d+)/i, 'TK-$1');
+    }
+  }
+  
+  // Samsung
+  if (vendor === 'Samsung') {
+    code = code.replace(/_New chip.*$/i, '');
+    code = code.replace(/_\d+$/, '');
+  }
+  
+  return code;
+}
+
+/**
+ * Находит маркетинговый код в альтернативах
+ */
+function findMarketingCode(alternatives, vendor) {
+  if (!alternatives || !Array.isArray(alternatives)) return null;
+  const allText = alternatives.map(alt => String(alt)).join(' ');
+  
+  if (vendor === 'Canon') {
+    // Приоритет 1: 7XX
+    let match = allText.match(/\b(7\d{2}[A-Z]?)\b/);
+    if (match) return match[1];
+    
+    // Приоритет 2: C-EXV
+    match = allText.match(/C-?EXV-?\d{1,2}\w?/i);
+    if (match) {
+      let code = match[0].toUpperCase().replace(/\s/g, '');
+      if (!code.includes('-') && code.includes('CEXV')) {
+        code = 'C-EXV' + code.split('CEXV')[1];
+      }
+      return code;
+    }
+    
+    // Приоритет 3: CRG-XXX
+    match = allText.match(/CRG-?\d{3}\w?/i);
+    if (match) {
+      let code = match[0].toUpperCase();
+      if (!code.includes('-')) {
+        code = 'CRG-' + code.substring(3);
+      }
+      return code;
+    }
+  }
+  
+  if (vendor === 'Konica Minolta') {
+    let match = allText.match(/\b(TNP-?\d{2}\w?)\b/i);
+    if (match) {
+      let code = match[1].toUpperCase();
+      if (!code.includes('-')) code = 'TNP-' + code.substring(3);
+      return code;
+    }
+    
+    match = allText.match(/\b(TN-?\d{3}\w?)\b/i);
+    if (match) {
+      let code = match[1].toUpperCase();
+      if (!code.includes('-')) code = 'TN-' + code.substring(2);
+      return code;
+    }
+  }
+  
+  if (vendor === 'Kyocera') {
+    let match = allText.match(/\b(TK-?\d{3,4}\w?)\b/i);
+    if (match) {
+      let code = match[1].toUpperCase();
+      if (!code.includes('-')) code = 'TK-' + code.substring(2);
+      return code;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Валидирует и нормализует один код
+ */
+function validateCode(item) {
+  const result = {
+    original: { ...item },
+    normalized: {},
+    validation: {
+      valid: false,
+      unofficial: false,
+      codeType: 'unknown',
+      issues: [],
+    },
+  };
+  
+  // Нормализуем vendor
+  const vendor = normalizeVendor(item.vendor || item.oemVendor);
+  if (!vendor) {
+    result.validation.issues.push('Missing vendor');
+    return result;
+  }
+  
+  // Нормализуем code
+  let code = item.code || item.partNumber;
+  if (!code) {
+    result.validation.issues.push('Missing code');
+    return result;
+  }
+  
+  code = String(code).trim().toUpperCase();
+  
+  // Проверяем на неофициальный
+  const unofficialCheck = isUnofficial(code, vendor);
+  if (unofficialCheck.unofficial) {
+    result.validation.unofficial = true;
+    result.validation.issues.push(`Unofficial: ${unofficialCheck.reason}`);
+    return result;
+  }
+  
+  // Нормализуем код
+  const normalizedCode = normalizeCode(code, vendor);
+  
+  // Определяем тип
+  const codeType = identifyCodeType(normalizedCode, vendor);
+  
+  // Пытаемся найти маркетинговый если технический
+  let finalCode = normalizedCode;
+  if (codeType === 'technical') {
+    const allText = item.alternativeNames ? item.alternativeNames.join(' ') : '';
+    const marketingCode = findMarketingCode(allText, vendor);
+    if (marketingCode && marketingCode !== normalizedCode) {
+      finalCode = marketingCode;
+      result.validation.codeType = 'marketing (swapped from technical)';
+    } else {
+      result.validation.codeType = 'technical (no marketing found)';
+    }
+  } else {
+    result.validation.codeType = codeType;
+  }
+  
+  // Формируем результат
+  result.normalized = {
+    vendor: vendor,
+    code: finalCode,
+    originalCode: code !== finalCode ? code : undefined,
+    codeType: codeType,
+    ...item,
+  };
+  
+  result.validation.valid = true;
+  
+  return result;
+}
+
+// ======================== ОСНОВНАЯ ЛОГИКА =============================
+
+const results = [];
+const stats = {
+  total: 0,
+  valid: 0,
+  unofficial: 0,
+  normalized: 0,
+  swapped: 0,
+  errors: 0,
+  removed_examples: [],
+};
+
+for (const item of $input.all()) {
+  stats.total++;
+  
+  try {
+    const result = validateCode(item.json);
+    
+    if (result.validation.valid) {
+      stats.valid++;
+      
+      // Проверяем, был ли код изменён
+      if (result.normalized.code !== result.original.code &&
+          result.normalized.code !== result.original.partNumber) {
+        stats.normalized++;
+      }
+      
+      // Проверяем swap technical→marketing
+      if (result.validation.codeType.includes('swapped')) {
+        stats.swapped++;
+      }
+      
+      results.push({
+        json: result.normalized,
+        pairedItem: item.pairedItem,
+      });
+    } else if (result.validation.unofficial) {
+      stats.unofficial++;
+      
+      // Сохраняем примеры удалённых
+      if (stats.removed_examples.length < 20) {
+        const vendor = result.original.vendor || result.original.oemVendor;
+        const code = result.original.code || result.original.partNumber;
+        stats.removed_examples.push(`${vendor}: ${code}`);
+      }
+    } else {
+      stats.errors++;
+    }
+  } catch (error) {
+    stats.errors++;
+    console.error('Error processing item:', error);
+  }
+}
+
+// Добавляем статистику в первый элемент
+if (results.length > 0) {
+  results[0].json._stats = stats;
+}
+
+// Если результатов нет
+if (results.length === 0) {
+  return [{
+    json: {
+      _stats: stats,
+      _message: 'No valid codes found',
+    },
+  }];
+}
+
+return results;
